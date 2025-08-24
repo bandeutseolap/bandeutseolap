@@ -1,5 +1,5 @@
-# JDK 17 slim 버전을 베이스 이미지로 사용
-FROM openjdk:17-jdk-slim
+# JDK 17 slim 버전을 베이스 이미지로 사용 -> 조금 더 가벼운 jre로 변경
+FROM eclipse-temurin:17-jre
 
 # 컨테이너 내부 작업 디렉터리를 /app 으로 설정
 WORKDIR /app
@@ -11,4 +11,4 @@ ARG JAR_FILE=build/libs/*SNAPSHOT.jar
 COPY ${JAR_FILE} app.jar
 
 # 컨테이너 시작 시 실행할 명령어: java -jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "appar"]
