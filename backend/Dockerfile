@@ -1,14 +1,23 @@
-# JDK 17 slim 버전을 베이스 이미지로 사용 -> 조금 더 가벼운 jre로 변경
-FROM eclipse-temurin:17-jre
-
-# 컨테이너 내부 작업 디렉터리를 /app 으로 설정
+# ---- 1단계: 빌드 (JDK 필요) ----
+FROM eclipse-temurin:17-jdk AS builder
 WORKDIR /app
 
-# 빌드 시점에 전달할 수 있는 변수 정의 (기본값은 build/libs/*SNAPSHOT.jar)
-ARG JAR_FILE=build/libs/*SNAPSHOT.jar
+# 캐시 효율을 위해 래퍼/설정 먼저 복사
+COPY gradlew gradlew.bat gradle/ ./
+COPY build.gradle.kts settings.gradle.kts ./
 
-# 위 ARG로 지정된 JAR 파일을 컨테이너 /app/app.jar 로 복사
-COPY ${JAR_FILE} app.jar
+# 소스 복사
+COPY src ./src
 
-# 컨테이너 시작 시 실행할 명령어: java -jar app.jar
-ENTRYPOINT ["java", "-jar", "appar"]
+# 권한 부여 후 빌드
+RUN chmod +x ./gradlew && ./gradlew bootJar --no-daemon
+
+# ---- 2단계: 실행 (JRE만 필요) ----
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+# 빌드 결과물만 가져오기
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","app.jar"]
