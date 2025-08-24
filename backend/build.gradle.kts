@@ -33,6 +33,7 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
+
 /* 2025.08.17
  * SpringBoot (Back-End)와 React (Front-End)를 하나의 패키지로 만들자
  * SpringBoot 빌드될 때 React가 먼저 빌드되고,
@@ -52,11 +53,12 @@ sourceSets {
 }
 
 tasks.processResources {
-	dependsOn ("copyReactBuildFiles")
+	/*dependsOn ("copyReactBuildFiles")*/ // 도커 빌드 전까지 주석
 	duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks {
+	/* // 도커 빌드 전까지 주석
 	val installReact by registering(Exec::class) {
 		workingDir = file(frontendDir)
 		inputs.dir(frontendDir)
@@ -98,4 +100,6 @@ tasks {
 	  }
 	* ./gradlew bootJar 실행
 	*/
+
+	 */
 }
