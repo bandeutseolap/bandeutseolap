@@ -23,48 +23,48 @@ jobs:
     strategy:
       matrix:
         part: [ backend, frontend ]   # backend, frontend 폴더 각각 실행
-      steps:
-          - uses: actions/checkout@v4     # 리포 코드 체크아웃
+    steps:
+      - uses: actions/checkout@v4     # 리포 코드 체크아웃
 
-          # 백엔드 빌드용 JDK 설치
-          - name: Setup JDK for backend
-            if: matrix.part == 'backend'
-            uses: actions/setup-java@v4
-            with:
-              distribution: temurin
-              java-version: '17'
+      # 백엔드 빌드용 JDK 설치
+      - name: Setup JDK for backend
+        if: matrix.part == 'backend'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-        # 프론트엔드 빌드용 Node 설치
-          - name: Setup Node for frontend
-            if: matrix.part == 'frontend'
-            uses: actions/setup-node@v4
-            with:
-              node-version: 20
-              cache: npm
-              cache-dependency-path: frontend/package-lock.json
+      # 프론트엔드 빌드용 Node 설치
+      - name: Setup Node for frontend
+        if: matrix.part == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-        # Docker 빌드 도구 준비 (buildx)
-          - uses: docker/setup-buildx-action@v3
+      # Docker 빌드 도구 준비 (buildx)
+      - uses: docker/setup-buildx-action@v3
 
-        # GHCR 로그인 (푸시 권한)
-          - name: Login to GHCR
-            uses: docker/login-action@v3
-            with:
-              registry: ${{ env.REGISTRY }}
-              username: ${{ github.actor }}
-              password: ${{ secrets.GITHUB_TOKEN }}
+      # GHCR 로그인 (푸시 권한)
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-        # backend 또는 frontend 폴더를 context 로 잡아서 빌드 & 푸시
-          - name: Build & Push ${{ matrix.part }}
-            uses: docker/build-push-action@v6
-            with:
-              context: ./${{ matrix.part }}                # 빌드 경로 (backend 또는 frontend)
-              push: true
-              tags: |
-                ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:${{ env.TAG }}   # 예: ghcr.io/bandeutseolap/backend:sha
-                ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:latest           # latest 태그도 함께
-              cache-from: type=gha,scope=${{ matrix.part }} # 캐시 활용
-              cache-to: type=gha,scope=${{ matrix.part }},mode=max
+      # backend 또는 frontend 폴더를 context 로 잡아서 빌드 & 푸시
+      - name: Build & Push ${{ matrix.part }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.part }}                # 빌드 경로 (backend 또는 frontend)
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:${{ env.TAG }}   # 예: ghcr.io/bandeutseolap/backend:sha
+            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:latest           # latest 태그도 함께
+          cache-from: type=gha,scope=${{ matrix.part }} # 캐시 활용
+          cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
   # 2) 서버에 배포
   deploy:
@@ -81,74 +81,74 @@ jobs:
       # SSH 원격 실행: 컨테이너 2개(backend, frontend) 교체
       - name: Deploy both containers via SSH
         env:
-            REGISTRY: ghcr.io
-            REPO: bandeutseolap
-            TAG: ${{ env.TAG }}
-            run: | #줄바꿈 유지하면서 여러 줄을 하나의 블록으로 묶겠다 는 YAML 문법
-              ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} /bin/bash <<'EOS'
-              set -euo pipefail
+          REGISTRY: ghcr.io
+          REPO: bandeutseolap
+          TAG: ${{ env.TAG }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} /bin/bash <<'EOS'
+          set -euo pipefail
 
-              REGISTRY="${REGISTRY}"
-              REPO="${REPO}"
-              TAG="${TAG}"
-    
-              NET="bandeutseolap-net"   # 공용 Docker 네트워크 이름
-              BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
-              FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
-    
-              BACKEND_NAME="bandeutseolap-backend"
-              FRONTEND_NAME="bandeutseolap-frontend"
-    
-              APP_DIR="/opt/bandeutseolap"
-              sudo mkdir -p "$APP_DIR"
-    
-              # 프라이빗 리포면 pull 토큰으로 로그인 (옵션)
-              if [ -n "${{ secrets.GHCR_PULL_TOKEN || '' }}" ]; then
-              echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login $REGISTRY -u ${{ github.actor }} --password-stdin
-              fi
-    
-              # 네트워크 없으면 생성
-              sudo docker network inspect "$NET" >/dev/null 2>&1 || sudo docker network create "$NET"
-    
-              # 최신 이미지 받기
-              sudo docker pull "$BACKEND_IMAGE"
-              sudo docker pull "$FRONTEND_IMAGE"
-    
-              # 백엔드 컨테이너 교체 (8080 포트 내부, 외부 노출 안 함 → 프론트 Nginx가 프록시)
-              sudo docker rm -f "$BACKEND_NAME" 2>/dev/null || true
-              sudo docker run -d --name "$BACKEND_NAME" \
-              --restart=always \
-              --network "$NET" \
-              --env-file "$APP_DIR/backend.env" \   # 서버에 저장된 환경변수 파일 (없으면 제거 가능)
-              "$BACKEND_IMAGE"
-    
-              # 프론트엔드(Nginx) 컨테이너 교체 (외부 80 포트 노출)
-              sudo docker rm -f "$FRONTEND_NAME" 2>/dev/null || true
-              sudo docker run -d --name "$FRONTEND_NAME" \
-              --restart=always \
-              --network "$NET" \
-              -p 80:80 \
-              "$FRONTEND_IMAGE"
-    
-              # 프론트엔드 간단 헬스체크 (index.html 로딩 확인)
-              for i in {1..30}; do
-              if curl -fsS http://127.0.0.1/ >/dev/null; then
+          REGISTRY="${REGISTRY}"
+          REPO="${REPO}"
+          TAG="${TAG}"
+
+          NET="bandeutseolap-net"   # 공용 Docker 네트워크 이름
+          BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
+          FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
+
+          BACKEND_NAME="bandeutseolap-backend"
+          FRONTEND_NAME="bandeutseolap-frontend"
+
+          APP_DIR="/opt/bandeutseolap"
+          sudo mkdir -p "$APP_DIR"
+
+          # 프라이빗 리포면 pull 토큰으로 로그인 (옵션)
+          if [ -n "${{ secrets.GHCR_PULL_TOKEN || '' }}" ]; then
+            echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          fi
+
+          # 네트워크 없으면 생성
+          sudo docker network inspect "$NET" >/dev/null 2>&1 || sudo docker network create "$NET"
+
+          # 최신 이미지 받기
+          sudo docker pull "$BACKEND_IMAGE"
+          sudo docker pull "$FRONTEND_IMAGE"
+
+          # 백엔드 컨테이너 교체 (8080 포트 내부, 외부 노출 안 함 → 프론트 Nginx가 프록시)
+          sudo docker rm -f "$BACKEND_NAME" 2>/dev/null || true
+          sudo docker run -d --name "$BACKEND_NAME" \
+            --restart=always \
+            --network "$NET" \
+            --env-file "$APP_DIR/backend.env" \   # 서버에 저장된 환경변수 파일 (없으면 제거 가능)
+            "$BACKEND_IMAGE"
+
+          # 프론트엔드(Nginx) 컨테이너 교체 (외부 80 포트 노출)
+          sudo docker rm -f "$FRONTEND_NAME" 2>/dev/null || true
+          sudo docker run -d --name "$FRONTEND_NAME" \
+            --restart=always \
+            --network "$NET" \
+            -p 80:80 \
+            "$FRONTEND_IMAGE"
+
+          # 프론트엔드 간단 헬스체크 (index.html 로딩 확인)
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1/ >/dev/null; then
               echo "Frontend OK"
               break
-              fi
-              sleep 2
-              if [ $i -eq 30 ]; then
+            fi
+            sleep 2
+            if [ $i -eq 30 ]; then
               echo "Frontend healthcheck failed"; exit 1
-              fi
-              done
-    
-              # (옵션) 백엔드 헬스체크 (Spring Actuator 사용할 경우)
-              if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
-              echo "Backend OK"
-              else
-              echo "Backend healthcheck skipped or not healthy (add actuator if needed)"
-              fi
-    
-              # 오래된 이미지 정리
-              sudo docker image prune -f
-              EOS
+            fi
+          done
+
+          # (옵션) 백엔드 헬스체크 (Spring Actuator 사용할 경우)
+          if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
+            echo "Backend OK"
+          else
+            echo "Backend healthcheck skipped or not healthy (add actuator if needed)"
+          fi
+
+          # 오래된 이미지 정리
+          sudo docker image prune -f
+          EOS
