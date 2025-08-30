@@ -3,7 +3,7 @@ name: CI-CD (backend + frontend, single server, no compose)
 # 언제 실행될지 정의
 on:
   push:
-    branches: [ main ]   # main 브랜치에 push 되면 자동 실행
+    branches: [ main ]
   workflow_dispatch:     # 필요 시 GitHub에서 수동 실행도 가능
     inputs:
       tag:
@@ -61,8 +61,8 @@ jobs:
           context: ./${{ matrix.part }}                # 빌드 경로 (backend 또는 frontend)
           push: true
           tags: |
-            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:${{ env.TAG }}   # 예: ghcr.io/bandeutseolap/backend:sha
-            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:latest           # latest 태그도 함께
+            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:${{ env.TAG }}   
+            ${{ env.REGISTRY }}/bandeutseolap/${{ matrix.part }}:latest
           cache-from: type=gha,scope=${{ matrix.part }} # 캐시 활용
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
@@ -82,8 +82,9 @@ jobs:
       - name: Deploy both containers via SSH
         env:
           REGISTRY: ghcr.io
-          REPO: bandeutseolap
-          TAG: ${{ env.TAG }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.sha }}
+
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} /bin/bash <<'EOS'
           set -euo pipefail
