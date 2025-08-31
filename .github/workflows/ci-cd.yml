@@ -70,32 +70,41 @@ jobs:
 
   # 2) 서버 배포 (VPN 내부 self-hosted 러너)
   deploy:
-    runs-on: [self-hosted]
+    runs-on: [ self-hosted ]
     needs: build-push
     timeout-minutes: 15
     steps:
-      - name: GHCR login (skip if no creds)
+      - name: "Preflight: require GHCR secrets"
         env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          GHCR_USERNAME:   ${{ secrets.GHCR_USERNAME }}
         run: |
-          if [ -n "$GHCR_PULL_TOKEN" ] && [ -n "$GHCR_USERNAME" ]; then
-            echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-          else
-            echo "No GHCR creds; assuming images are public. Skipping login."
-          fi
+          set -e
+          [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
+          [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
+          echo "Secrets OK"
 
-      - name: Pull & run containers
+      - name: "GHCR login (private images)"
         env:
-          REGISTRY: ${{ env.REGISTRY }}
-          REPO:     ${{ env.REPO }}
-          TAG:      ${{ env.TAG }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+      - name: "Pull & run containers"
+        env:
+          REGISTRY: ghcr.io
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
 
           NET="bandeutseolap-net"
           BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
           FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
+
+          echo "Pulling: $BACKEND_IMAGE"
+          echo "Pulling: $FRONTEND_IMAGE"
 
           docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
 
@@ -114,14 +123,12 @@ jobs:
             -p 80:80 \
             "$FRONTEND_IMAGE"
 
-          # 간단 헬스체크
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
             sleep 2
             if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
           done
 
-          # (옵션) 백엔드 Actuator 헬스체크
           if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
             echo "Backend OK"
           else
