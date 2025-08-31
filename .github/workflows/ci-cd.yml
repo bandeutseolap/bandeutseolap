@@ -1,165 +1,98 @@
-name: CI-CD (backend + frontend, single server, no compose)
+deploy:
+  runs-on: ubuntu-latest
+  needs: build-push
+  timeout-minutes: 15
+  environment: production
+  steps:
+    - name: "Preflight: SSH_KEY must exist"
+      if: ${{ secrets.SSH_KEY == '' }}
+      run: |
+        echo "::error::SSH_KEY is EMPTY"
+        exit 1
 
-# GHCR 푸시에 필요한 권한
-permissions:
-  contents: read
-  packages: write
+    - name: "Preflight: SSH_USER must exist"
+      if: ${{ secrets.SSH_USER == '' }}
+      run: |
+        echo "::error::SSH_USER is EMPTY"
+        exit 1
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Image tag (default: git sha)"
-        default: ""
+    - name: "Preflight: SSH_HOST must exist"
+      if: ${{ secrets.SSH_HOST == '' }}
+      run: |
+        echo "::error::SSH_HOST is EMPTY"
+        exit 1
 
-# 전역 환경 변수
-env:
-  REGISTRY: ghcr.io
-  REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap (OWNER/REPO)
-  TAG: ${{ github.sha }}
+    - name: Add SSH key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_KEY }}
 
-jobs:
-  # 1) backend, frontend 이미지 빌드 & GHCR 푸시
-  build-push:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    strategy:
-      matrix:
-        part: [ backend, frontend ]
-    steps:
-      - uses: actions/checkout@v4
+    - name: Check loaded SSH key
+      run: ssh-add -l || echo "no identities loaded"
 
-      - name: Setup JDK for backend
-        if: matrix.part == 'backend'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    - name: Deploy both containers via SSH
+      env:
+        REGISTRY: ${{ env.REGISTRY }}
+        REPO: ${{ env.REPO }}
+        TAG: ${{ env.TAG }}
+        GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}   # private GHCR면
+        GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}       # PAT 만든 계정명
+      run: |
+        ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          REGISTRY="${REGISTRY}" REPO="${REPO}" TAG="${TAG}" \
+          GHCR_PULL_TOKEN="${GHCR_PULL_TOKEN}" GHCR_USERNAME="${GHCR_USERNAME}" \
+          /bin/bash -s <<'EOS'
+        set -euo pipefail
+        echo "[INFO] Using images from: $REGISTRY/$REPO, tag: $TAG"
 
-      - name: Setup Node for frontend
-        if: matrix.part == 'frontend'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+        NET="bandeutseolap-net"
+        BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
+        FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
 
-      - uses: docker/setup-buildx-action@v3
+        BACKEND_NAME="bandeutseolap-backend"
+        FRONTEND_NAME="bandeutseolap-frontend"
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        APP_DIR="/opt/bandeutseolap"
+        sudo mkdir -p "$APP_DIR"
 
-      - name: Build & Push ${{ matrix.part }}
-        uses: docker/build-push-action@v6
-        with:
-          context: ./${{ matrix.part }}
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:${{ env.TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:latest
-          cache-from: type=gha,scope=${{ matrix.part }}
-          cache-to: type=gha,scope=${{ matrix.part }},mode=max
+        # GHCR가 private이면 로그인
+        if [ -n "${GHCR_PULL_TOKEN:-}" ] && [ -n "${GHCR_USERNAME:-}" ]; then
+          echo "$GHCR_PULL_TOKEN" | sudo docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
+        fi
 
-  # 2) 서버 배포
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: build-push
-    environment: production
-    steps:
-      - name: "Preflight: check required secrets"
-        run: |
-          [ -z "${{ secrets.SSH_KEY }}" ]  && echo "::error::SSH_KEY is EMPTY"  && exit 1
-          [ -z "${{ secrets.SSH_USER }}" ] && echo "::error::SSH_USER is EMPTY" && exit 1
-          [ -z "${{ secrets.SSH_HOST }}" ] && echo "::error::SSH_HOST is EMPTY" && exit 1
+        sudo docker network inspect "$NET" >/dev/null 2>&1 || sudo docker network create "$NET"
 
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+        sudo docker pull "$BACKEND_IMAGE"
+        sudo docker pull "$FRONTEND_IMAGE"
 
-      # (선택) 로드된 키 확인
-      - name: Check loaded SSH key
-        run: ssh-add -l || echo "no identities loaded"
+        sudo docker rm -f "$BACKEND_NAME" 2>/dev/null || true
+        sudo docker run -d --name "$BACKEND_NAME" \
+          --restart=always \
+          --network "$NET" \
+          --env-file "$APP_DIR/backend.env" \
+          "$BACKEND_IMAGE"
 
-      - name: Deploy both containers via SSH
-        env:
-          REGISTRY: ${{ env.REGISTRY }}
-          REPO: ${{ env.REPO }}
-          TAG: ${{ env.TAG }}
-          # 프라이빗 GHCR일 때만 사용(선택)
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-        run: |
-          # 원격 bash에 환경변수들을 주입해서 실행
-          ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            REGISTRY="${REGISTRY}" REPO="${REPO}" TAG="${TAG}" \
-            GHCR_PULL_TOKEN="${GHCR_PULL_TOKEN}" GHCR_USERNAME="${GHCR_USERNAME}" \
-            /bin/bash -s <<'EOS'
-          set -euo pipefail
+        sudo docker rm -f "$FRONTEND_NAME" 2>/dev/null || true
+        sudo docker run -d --name "$FRONTEND_NAME" \
+          --restart=always \
+          --network "$NET" \
+          -p 80:80 \
+          "$FRONTEND_IMAGE"
 
-          echo "[INFO] Using images from: $REGISTRY/$REPO, tag: $TAG"
-
-          NET="bandeutseolap-net"
-          BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
-          FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
-
-          BACKEND_NAME="bandeutseolap-backend"
-          FRONTEND_NAME="bandeutseolap-frontend"
-
-          APP_DIR="/opt/bandeutseolap"
-          sudo mkdir -p "$APP_DIR"
-
-          # (선택) 프라이빗 GHCR 로그인
-          if [ -n "${GHCR_PULL_TOKEN:-}" ] && [ -n "${GHCR_USERNAME:-}" ]; then
-            echo "$GHCR_PULL_TOKEN" | sudo docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
+        for i in {1..30}; do
+          if curl -fsS http://127.0.0.1/ >/dev/null; then
+            echo "Frontend OK"; break
           fi
+          sleep 2
+          if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
+        done
 
-          # 네트워크 생성(없으면)
-          sudo docker network inspect "$NET" >/dev/null 2>&1 || sudo docker network create "$NET"
+        if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
+          echo "Backend OK"
+        else
+          echo "Backend healthcheck skipped or not healthy (add actuator if needed)"
+        fi
 
-          # 최신 이미지 pull
-          sudo docker pull "$BACKEND_IMAGE"
-          sudo docker pull "$FRONTEND_IMAGE"
-
-          # 백엔드 교체 (내부 8080)
-          sudo docker rm -f "$BACKEND_NAME" 2>/dev/null || true
-          sudo docker run -d --name "$BACKEND_NAME" \
-            --restart=always \
-            --network "$NET" \
-            --env-file "$APP_DIR/backend.env" \
-            "$BACKEND_IMAGE"
-
-          # 프론트엔드(Nginx) 교체 (80 노출)
-          sudo docker rm -f "$FRONTEND_NAME" 2>/dev/null || true
-          sudo docker run -d --name "$FRONTEND_NAME" \
-            --restart=always \
-            --network "$NET" \
-            -p 80:80 \
-            "$FRONTEND_IMAGE"
-
-          # 프론트 헬스체크
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1/ >/dev/null; then
-              echo "Frontend OK"; break
-            fi
-            sleep 2
-            if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
-          done
-
-          # (옵션) 백엔드 헬스체크
-          if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
-            echo "Backend OK"
-          else
-            echo "Backend healthcheck skipped or not healthy (add actuator if needed)"
-          fi
-
-          sudo docker image prune -f
-          EOS
+        sudo docker image prune -f
+        EOS
