@@ -68,13 +68,22 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.part }}
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
-  # 2) 서버 배포 (VPN 내부 self-hosted 러너)
   deploy:
     runs-on: [ self-hosted ]
     needs: build-push
     timeout-minutes: 15
     steps:
-      # 1) GHCR 로그인 (같은 DOCKER_CONFIG 사용)
+      - name: "Preflight: require GHCR secrets"
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          set -e
+          [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
+          [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
+          echo "Secrets OK"
+
+      # (B) 로그인 (같은 DOCKER_CONFIG를 명시)
       - name: "GHCR login (private images)"
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
@@ -83,10 +92,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$DOCKER_CONFIG"
+          docker logout ghcr.io || true
           echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-          echo "whoami=$(whoami) HOME=$HOME DOCKER_CONFIG=$DOCKER_CONFIG"
+          echo "Login Succeeded; DOCKER_CONFIG=$DOCKER_CONFIG"
+          # 진단용(권한 확인): latest를 한 번 풀어봄
+          docker pull ghcr.io/${{ github.repository }}/backend:latest
+          docker pull ghcr.io/${{ github.repository }}/frontend:latest
 
-      # 2) pull & run (동일한 DOCKER_CONFIG 재사용)
+      # (C) SHA 태그 pull & run
       - name: "Pull & run containers"
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
@@ -104,9 +117,9 @@ jobs:
 
           docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
 
-          # sha 태그 pull (로그인 실패/스코프 문제면 여기서 막힘)
-          docker pull "$BACKEND_IMAGE"
-          docker pull "$FRONTEND_IMAGE"
+          # SHA 태그가 없으면 여기서 실패(보통 manifest unknown) / 인증문제면 denied
+          docker pull "$BACKEND_IMAGE" || { echo "::warning::backend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/backend:latest"; BACKEND_IMAGE="$REGISTRY/$REPO/backend:latest"; }
+          docker pull "$FRONTEND_IMAGE" || { echo "::warning::frontend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/frontend:latest"; FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:latest"; }
 
           docker rm -f bandeutseolap-backend 2>/dev/null || true
           docker run -d --name bandeutseolap-backend \
