@@ -69,61 +69,61 @@ jobs:
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
   # 2) 서버 배포 (VPN 내부 self-hosted 러너)
-deploy:
-  runs-on: [self-hosted]
-  needs: build-push
-  steps:
-    - name: "GHCR login (private images)"
-      env:
-        GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-        GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-      run: |
-        set -euo pipefail
-        [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
-        [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
+  deploy:
+    runs-on: [ self-hosted ]
+    needs: build-push
+    steps:
+      - name: "GHCR login (private images)"
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
+          [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
 
-        docker logout ghcr.io || true
-        echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          docker logout ghcr.io || true
+          echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
-    - name: "Pull & run containers"
-      env:
-        REGISTRY: ghcr.io
-        REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
-        TAG:  ${{ github.sha }}
-      run: |
-        set -euo pipefail
-        NET="bandeutseolap-net"
-        BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
-        FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
-        echo "Pulling: $BACKEND_IMAGE"
-        echo "Pulling: $FRONTEND_IMAGE"
+      - name: "Pull & run containers"
+        env:
+          REGISTRY: ghcr.io
+          REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
+          TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          NET="bandeutseolap-net"
+          BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
+          FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
+          echo "Pulling: $BACKEND_IMAGE"
+          echo "Pulling: $FRONTEND_IMAGE"
 
-        docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
+          docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
 
-        # 풀 시도 (여기서 여전히 denied면 토큰/권한/SSO 문제)
-        docker pull "$BACKEND_IMAGE"
-        docker pull "$FRONTEND_IMAGE"
+          # 풀 시도 (여기서 여전히 denied면 토큰/권한/SSO 문제)
+          docker pull "$BACKEND_IMAGE"
+          docker pull "$FRONTEND_IMAGE"
 
-        docker rm -f bandeutseolap-backend 2>/dev/null || true
-        docker run -d --name bandeutseolap-backend \
-          --restart=always --network "$NET" \
-          --env-file /opt/bandeutseolap/backend.env \
-          "$BACKEND_IMAGE"
+          docker rm -f bandeutseolap-backend 2>/dev/null || true
+          docker run -d --name bandeutseolap-backend \
+            --restart=always --network "$NET" \
+            --env-file /opt/bandeutseolap/backend.env \
+            "$BACKEND_IMAGE"
 
-        docker rm -f bandeutseolap-frontend 2>/dev/null || true
-        docker run -d --name bandeutseolap-frontend \
-          --restart=always --network "$NET" \
-          -p 80:80 \
-          "$FRONTEND_IMAGE"
+          docker rm -f bandeutseolap-frontend 2>/dev/null || true
+          docker run -d --name bandeutseolap-frontend \
+            --restart=always --network "$NET" \
+            -p 80:80 \
+            "$FRONTEND_IMAGE"
 
-        for i in {1..30}; do
-          if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
-          sleep 2
-          if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
-        done
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
+            sleep 2
+            if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
+          done
 
-        if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
-          echo "Backend OK"
-        else
-          echo "Backend healthcheck skipped (add actuator if needed)"
-        fi
+          if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
+            echo "Backend OK"
+          else
+            echo "Backend healthcheck skipped (add actuator if needed)"
+          fi
