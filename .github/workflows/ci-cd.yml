@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPO: ${{ github.repository }}
+  REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
   TAG: ${{ github.sha }}
 
 jobs:
@@ -68,11 +68,24 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.part }}
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
+  # 2) 서버 배포 (VPN 내부 self-hosted 러너)
   deploy:
-    runs-on: [ self-hosted ]
+    runs-on: [self-hosted]
     needs: build-push
     timeout-minutes: 15
     steps:
+      # (선택) 시크릿 프리플라이트
+      - name: "Preflight: require GHCR secrets"
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          set -e
+          [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
+          [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
+          echo "Secrets OK"
+
+      # GHCR 로그인 (private 이미지)
       - name: "GHCR login (private images)"
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
@@ -83,13 +96,15 @@ jobs:
           mkdir -p "$DOCKER_CONFIG"
           docker logout ghcr.io || true
           echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          echo "Login Succeeded; DOCKER_CONFIG=$DOCKER_CONFIG"
 
+      # 컨테이너 pull & 교체
       - name: "Pull & run containers"
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
           REGISTRY: ghcr.io
           REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
-          TAG: ${{ github.sha }}
+          TAG:  ${{ github.sha }}
         run: |
           set -euo pipefail
           NET="bandeutseolap-net"
@@ -105,12 +120,13 @@ jobs:
           docker pull "$BACKEND_IMAGE" || { echo "::warning::backend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/backend:latest"; BACKEND_IMAGE="$REGISTRY/$REPO/backend:latest"; }
           docker pull "$FRONTEND_IMAGE" || { echo "::warning::frontend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/frontend:latest"; FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:latest"; }
 
-          # --- 여기! env-file을 조건부로 붙임 ---
+          # --- env-file을 $HOME 기준으로 조건부 적용 ---
+          ENV_PATH="$HOME/bandeutseolap/backend.env"
           ENV_FLAG=""
-          if [ -f /opt/bandeutseolap/backend.env ]; then
-            ENV_FLAG="--env-file /opt/bandeutseolap/backend.env"
+          if [ -f "$ENV_PATH" ]; then
+            ENV_FLAG="--env-file $ENV_PATH"
           else
-            echo "::warning::/opt/bandeutseolap/backend.env not found; starting backend without env-file"
+            echo "::warning::$ENV_PATH not found; starting backend without env-file"
           fi
 
           docker rm -f bandeutseolap-backend 2>/dev/null || true
@@ -125,15 +141,16 @@ jobs:
             -p 80:80 \
             "$FRONTEND_IMAGE"
 
+          # 프론트 간단 헬스체크
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
             sleep 2
             if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
           done
 
+          # (옵션) 백엔드 Actuator 헬스체크
           if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
             echo "Backend OK"
           else
             echo "Backend healthcheck skipped (add actuator if needed)"
           fi
-
