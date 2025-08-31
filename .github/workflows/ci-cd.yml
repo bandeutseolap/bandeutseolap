@@ -73,11 +73,18 @@ jobs:
     needs: build-push
     environment: production
     steps:
+      - name: "Preflight: check required secrets"
+        run: |
+          [ -z "${{ secrets.SSH_KEY }}" ]  && echo "::error::SSH_KEY is EMPTY"  && exit 1
+          [ -z "${{ secrets.SSH_USER }}" ] && echo "::error::SSH_USER is EMPTY" && exit 1
+          [ -z "${{ secrets.SSH_HOST }}" ] && echo "::error::SSH_HOST is EMPTY" && exit 1
+
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      # (선택) 로드된 키 확인
       - name: Check loaded SSH key
         run: ssh-add -l || echo "no identities loaded"
 
@@ -86,9 +93,11 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           REPO: ${{ env.REPO }}
           TAG: ${{ env.TAG }}
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}   # 프라이빗 GHCR이면 필요
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}       # 프라이빗 GHCR이면 추천(고정 아이디)
+          # 프라이빗 GHCR일 때만 사용(선택)
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
         run: |
+          # 원격 bash에 환경변수들을 주입해서 실행
           ssh -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             REGISTRY="${REGISTRY}" REPO="${REPO}" TAG="${TAG}" \
@@ -108,7 +117,7 @@ jobs:
           APP_DIR="/opt/bandeutseolap"
           sudo mkdir -p "$APP_DIR"
 
-          # 프라이빗 GHCR이면 로그인 (토큰+고정 사용자명 권장)
+          # (선택) 프라이빗 GHCR 로그인
           if [ -n "${GHCR_PULL_TOKEN:-}" ] && [ -n "${GHCR_USERNAME:-}" ]; then
             echo "$GHCR_PULL_TOKEN" | sudo docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
           fi
