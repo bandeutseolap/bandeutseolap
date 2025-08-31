@@ -81,7 +81,7 @@ jobs:
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.dobidan }}
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy both containers via SSH
         env:
