@@ -1,6 +1,5 @@
 name: CI-CD (backend + frontend, single server, no compose)
 
-# GHCR 푸시에 필요한 권한
 permissions:
   contents: read
   packages: write
@@ -14,68 +13,117 @@ on:
         description: "Image tag (default: git sha)"
         default: ""
 
-# 전역 환경 변수
 env:
   REGISTRY: ghcr.io
-  REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap (OWNER/REPO)
+  REPO: ${{ github.repository }}
   TAG: ${{ github.sha }}
 
 jobs:
+  # 1) backend / frontend 이미지 빌드 & GHCR 푸시
   build-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        part: [ backend, frontend ]
+    steps:
+      - uses: actions/checkout@v4
 
+      # backend 빌드에만 JDK
+      - name: Setup JDK (backend only)
+        if: matrix.part == 'backend'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # frontend 빌드에만 Node
+      - name: Setup Node (frontend only)
+        if: matrix.part == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GHCR 로그인 (푸시용) — GITHUB_TOKEN으로 가능
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 컨텍스트를 backend / frontend 로 바꿔가며 빌드 & 푸시
+      - name: Build & Push ${{ matrix.part }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.part }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:${{ env.TAG }}
+            ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:latest
+          cache-from: type=gha,scope=${{ matrix.part }}
+          cache-to: type=gha,scope=${{ matrix.part }},mode=max
+
+  # 2) 서버 배포 (VPN 내부 self-hosted 러너)
   deploy:
-    runs-on: [ self-hosted ]              # 러너 라벨에 맞게 필요시 [self-hosted, Linux, X64] 등
+    runs-on: [self-hosted]
     needs: build-push
     timeout-minutes: 15
     steps:
-      # 1) GHCR 로그인 (패키지가 private일 때 필수)
-      - name: GHCR login
+      - name: GHCR login (skip if no creds)
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GHCR_USERNAME:   ${{ secrets.GHCR_USERNAME }}
         run: |
-          echo "${{ secrets.GHCR_PULL_TOKEN }}" \
-            | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+          if [ -n "$GHCR_PULL_TOKEN" ] && [ -n "$GHCR_USERNAME" ]; then
+            echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          else
+            echo "No GHCR creds; assuming images are public. Skipping login."
+          fi
 
-      # 2) 컨테이너 pull & 교체 실행
       - name: Pull & run containers
         env:
-          REGISTRY: ghcr.io
-          REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
-          TAG: ${{ github.sha }}
+          REGISTRY: ${{ env.REGISTRY }}
+          REPO:     ${{ env.REPO }}
+          TAG:      ${{ env.TAG }}
         run: |
           set -euo pipefail
-          
+
           NET="bandeutseolap-net"
           BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
           FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
-          
+
           docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
-          
+
           docker pull "$BACKEND_IMAGE"
           docker pull "$FRONTEND_IMAGE"
-          
+
           docker rm -f bandeutseolap-backend 2>/dev/null || true
           docker run -d --name bandeutseolap-backend \
             --restart=always --network "$NET" \
             --env-file /opt/bandeutseolap/backend.env \
             "$BACKEND_IMAGE"
-          
+
           docker rm -f bandeutseolap-frontend 2>/dev/null || true
           docker run -d --name bandeutseolap-frontend \
             --restart=always --network "$NET" \
             -p 80:80 \
             "$FRONTEND_IMAGE"
-          
-          # 프론트 헬스체크
+
+          # 간단 헬스체크
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
             sleep 2
             if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
           done
-          
+
           # (옵션) 백엔드 Actuator 헬스체크
           if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
             echo "Backend OK"
           else
             echo "Backend healthcheck skipped (add actuator if needed)"
           fi
-
