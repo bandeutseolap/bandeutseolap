@@ -72,21 +72,24 @@ jobs:
   deploy:
     runs-on: [ self-hosted ]
     needs: build-push
+    timeout-minutes: 15
     steps:
+      # 1) GHCR 로그인 (같은 DOCKER_CONFIG 사용)
       - name: "GHCR login (private images)"
         env:
+          DOCKER_CONFIG: ${{ runner.temp }}/.docker
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
         run: |
           set -euo pipefail
-          [ -n "$GHCR_USERNAME" ]   || { echo "::error::GHCR_USERNAME is empty"; exit 1; }
-          [ -n "$GHCR_PULL_TOKEN" ] || { echo "::error::GHCR_PULL_TOKEN is empty"; exit 1; }
-
-          docker logout ghcr.io || true
+          mkdir -p "$DOCKER_CONFIG"
           echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          echo "whoami=$(whoami) HOME=$HOME DOCKER_CONFIG=$DOCKER_CONFIG"
 
+      # 2) pull & run (동일한 DOCKER_CONFIG 재사용)
       - name: "Pull & run containers"
         env:
+          DOCKER_CONFIG: ${{ runner.temp }}/.docker
           REGISTRY: ghcr.io
           REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
           TAG: ${{ github.sha }}
@@ -95,12 +98,13 @@ jobs:
           NET="bandeutseolap-net"
           BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
           FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
+
           echo "Pulling: $BACKEND_IMAGE"
           echo "Pulling: $FRONTEND_IMAGE"
 
           docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
 
-          # 풀 시도 (여기서 여전히 denied면 토큰/권한/SSO 문제)
+          # sha 태그 pull (로그인 실패/스코프 문제면 여기서 막힘)
           docker pull "$BACKEND_IMAGE"
           docker pull "$FRONTEND_IMAGE"
 
