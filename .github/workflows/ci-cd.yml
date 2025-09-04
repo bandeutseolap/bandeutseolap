@@ -85,7 +85,6 @@ jobs:
     needs: build-push
     timeout-minutes: 15
     steps:
-      -
       # 어디서/어느 도커 데몬에 붙었는지 확인
       - name: Sanity check (where am I?)
         run: |
