@@ -1,4 +1,4 @@
-# ---- 1단계: 빌드 ----
+# ---- 1단계: 빌드 ---
 FROM node:20-alpine AS build
 ENV NODE_ENV=production
 WORKDIR /app
