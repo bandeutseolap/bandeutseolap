@@ -10,12 +10,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Image tag (default: git sha)"
+        description: "Image tag"
         default: ""
 
 env:
   REGISTRY: ghcr.io
-  REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
+  REPO: ${{ github.repository }}
   TAG: ${{ github.sha }}
 
 jobs:
@@ -29,7 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # backend 빌드에만 JDK
       - name: Setup JDK (backend only)
         if: matrix.part == 'backend'
         uses: actions/setup-java@v4
@@ -37,7 +36,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # frontend 빌드에만 Node
       - name: Setup Node (frontend only)
         if: matrix.part == 'frontend'
         uses: actions/setup-node@v4
@@ -48,7 +46,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      # GHCR 로그인 (푸시용) — GITHUB_TOKEN으로 가능
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -56,7 +53,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 컨텍스트를 backend / frontend 로 바꿔가며 빌드 & 푸시
       - name: Build & Push ${{ matrix.part }}
         uses: docker/build-push-action@v6
         with:
@@ -74,7 +70,19 @@ jobs:
     needs: build-push
     timeout-minutes: 15
     steps:
-      # (선택) 시크릿 프리플라이트
+      # 👇 추가된 스텝: 실제로 어디에서/어느 도커 데몬에 붙는지 확인
+      - name: Sanity check (where am I?)
+        run: |
+          set -euxo pipefail
+          echo "RUNNER_NAME=${RUNNER_NAME:-unknown}"
+          echo "RUNNER_TRACKING_ID=${RUNNER_TRACKING_ID:-unknown}"
+          echo "== who/where =="; hostname; whoami
+          echo "== ip addrs =="; ip -4 addr || true
+          echo "== docker.sock =="; ls -l /var/run/docker.sock || true
+          echo "== cgroup hint =="; head -n 5 /proc/1/cgroup || true
+          echo "== docker info (root dir) =="; docker info 2>/dev/null | grep -E 'Server Version|Docker Root Dir' || true
+          echo "== docker ps on this Docker daemon =="; docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}' || true
+
       - name: "Preflight: require GHCR secrets"
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -103,7 +111,7 @@ jobs:
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
           REGISTRY: ghcr.io
-          REPO: ${{ github.repository }}   # 예: yelinz515/bandeutseolap
+          REPO: ${{ github.repository }}
           TAG:  ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -116,11 +124,9 @@ jobs:
 
           docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
 
-          # SHA 태그 pull (없으면 latest로 폴백)
           docker pull "$BACKEND_IMAGE" || { echo "::warning::backend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/backend:latest"; BACKEND_IMAGE="$REGISTRY/$REPO/backend:latest"; }
           docker pull "$FRONTEND_IMAGE" || { echo "::warning::frontend:$TAG not found; trying :latest"; docker pull "$REGISTRY/$REPO/frontend:latest"; FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:latest"; }
 
-          # --- env-file을 $HOME 기준으로 조건부 적용 ---
           ENV_PATH="$HOME/bandeutseolap/backend.env"
           ENV_FLAG=""
           if [ -f "$ENV_PATH" ]; then
@@ -141,14 +147,12 @@ jobs:
             -p 80:80 \
             "$FRONTEND_IMAGE"
 
-          # 프론트 간단 헬스체크
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
             sleep 2
             if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
           done
 
-          # (옵션) 백엔드 Actuator 헬스체크
           if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
             echo "Backend OK"
           else
