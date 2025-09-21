@@ -1,4 +1,4 @@
-package com.dobidan.bandeutseolap.testcontroller;
+package com.dobidan.bandeutseolap.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
