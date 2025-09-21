@@ -8,6 +8,6 @@ public class HelloWorldController {
 
     @GetMapping("/api/hello")
     public String hello() {
-        return "커밋반영이잘될까요?";
+        return "최종 대소문자·패키지 경로 충돌 해결 확인용 디버그";
     }
 }
