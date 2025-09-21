@@ -150,6 +150,7 @@ jobs:
           docker rm -f bandeutseolap-backend 2>/dev/null || true
           docker run -d --name bandeutseolap-backend \
             --restart=always --network "$NET" \
+            -p 8080:8080 \
             $ENV_FLAG \
             "$BACKEND_REF"
 
@@ -166,7 +167,7 @@ jobs:
             if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
           done
 
-          # (옵션) 백엔드 Actuator 헬스체크 (있으면 사용)
+          # 백엔드 Actuator 헬스체크 
           if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
             echo "Backend OK"
           else
