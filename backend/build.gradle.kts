@@ -15,7 +15,7 @@ description = "dobidan project for Spring Boot"
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+		languageVersion.set(JavaLanguageVersion.of(17)) /*Kotlin은 1.5.30버전 부터 Java toolchains를 공식적으로 지원*/
 	}
 }
 
@@ -25,8 +25,16 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.mariadb.jdbc:mariadb-java-client:3.3.2")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	/* Database dependency */
+	implementation ("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation ("com.fasterxml.jackson.datatype:jackson-datatype-hibernate5")
+	implementation("org.mariadb.jdbc:mariadb-java-client:3.3.3")
+	/* Database dependency */
+
 }
 
 tasks.withType<Test> {
