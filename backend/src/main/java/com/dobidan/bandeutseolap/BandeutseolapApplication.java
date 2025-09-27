@@ -22,7 +22,7 @@ public class BandeutseolapApplication {
 		return args -> {
 			try {
 				dataSource.getConnection().close();
-				logger.info("데이터베이스 연결 성공!");
+				logger.info("데이터베이스 연결!");
 			} catch (Exception e) {
 				logger.error("데이터베이스 연결 실패: ", e);
 			}
