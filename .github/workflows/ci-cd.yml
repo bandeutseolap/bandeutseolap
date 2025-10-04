@@ -188,3 +188,12 @@ jobs:
           done
           echo "== who binds :80 on host? =="; ss -ltnp 'sport = :80' || true
           echo "== frontend version.txt (if baked) =="; curl -fsS http://127.0.0.1/version.txt || true
+
+      # DB 연결 GitHub Secrets 워크플로우 실행 시,.backend.env 디버깅
+
+      - name: Create .backend.env
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .backend.env
+          echo "DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}" >> .backend.env
+          echo "DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}" >> .backend.env
+          echo "SPRING_JACKSON_TIME_ZONE=Asia/Seoul" >> .backend.env
