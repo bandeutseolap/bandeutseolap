@@ -1,4 +1,4 @@
-name: CI-CD (backend + frontend, single server, no compose)
+name: CI-CD (backend + frontend, compose deploy)
 
 permissions:
   contents: read
@@ -24,21 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
-      matrix:
-        part: [ backend, frontend ]
-
+      matrix: { part: [ backend, frontend ] }
     steps:
       - uses: actions/checkout@v4
 
-      # backend 빌드에만 JDK
       - name: Setup JDK (backend only)
         if: matrix.part == 'backend'
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: temurin #JDK 배포판
           java-version: '17'
 
-      # frontend 빌드에만 Node
       - name: Setup Node (frontend only)
         if: matrix.part == 'frontend'
         uses: actions/setup-node@v4
@@ -49,7 +45,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      # GHCR 로그인 (푸시용) — GITHUB_TOKEN 가능
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -57,7 +52,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 컨텍스트를 backend / frontend 로 바꿔가며 빌드 & 푸시
       - name: Build & Push ${{ matrix.part }}
         uses: docker/build-push-action@v6
         with:
@@ -66,134 +60,59 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:${{ env.TAG }}
             ${{ env.REGISTRY }}/${{ env.REPO }}/${{ matrix.part }}:latest
-          # 코드/환경 식별을 위한 OCI 라벨
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.ref.name=${{ github.ref_name }}
             org.opencontainers.image.title=${{ matrix.part }}
-          # Dockerfile에서 선택적으로 사용할 빌드 인자 (있으면 활용됨)
           build-args: |
             GIT_SHA=${{ github.sha }}
             GIT_REF=${{ github.ref_name }}
           cache-from: type=gha,scope=${{ matrix.part }}
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
-  # 2) 서버 배포 (self-hosted 러너 — 필요시 특정 라벨 추가 권장)
+  # 2) 서버 배포 (self-hosted 러너 컨테이너에서 compose 실행)
   deploy:
     runs-on: [self-hosted]
     needs: build-push
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      # 어디서/어느 도커 데몬에 붙었는지 확인
-      - name: Sanity check (where am I?)
-        run: |
-          set -euxo pipefail
-          echo "RUNNER_NAME=${RUNNER_NAME:-unknown}"
-          echo "RUNNER_TRACKING_ID=${RUNNER_TRACKING_ID:-unknown}"
-          echo "== who/where =="; hostname; whoami
-          echo "== ip addrs =="; ip -4 addr || true
-          echo "== docker.sock =="; ls -l /var/run/docker.sock || true
-          echo "== cgroup hint =="; head -n 5 /proc/1/cgroup || true
-          echo "== docker info (root dir) =="; docker info 2>/dev/null | grep -E 'Server Version|Docker Root Dir' || true
-          echo "== docker ps on this Docker daemon =="; docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}' || true
+      - name: Checkout repo (get docker-compose.yml)
+        uses: actions/checkout@v4
 
-      # GHCR 로그인 (private 이미지 pull)
-      - name: GHCR login (private images)
+      - name: GHCR login (pull private images)
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/.docker
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p "$DOCKER_CONFIG"
           docker logout ghcr.io || true
-          echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-          echo "Login Succeeded; DOCKER_CONFIG=$DOCKER_CONFIG"
+          echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      # 컨테이너 pull & 교체 (폴백 없음: 태그 없으면 실패로 바로 알림)
-      - name: Pull & run containers (pin by digest)
-        env:
-          DOCKER_CONFIG: ${{ runner.temp }}/.docker
-          REGISTRY: ${{ env.REGISTRY }}
-          REPO: ${{ env.REPO }}
-          TAG:  ${{ env.TAG }}
+      - name: Create .backend.env next to compose
         run: |
           set -euo pipefail
-          NET="bandeutseolap-net"
-          BACKEND_IMAGE="$REGISTRY/$REPO/backend:$TAG"
-          FRONTEND_IMAGE="$REGISTRY/$REPO/frontend:$TAG"
+          cd "$GITHUB_WORKSPACE"
+          cat > .backend.env <<'EOF'
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+          SPRING_JACKSON_TIME_ZONE=Asia/Seoul
+          EOF
+          ls -al .backend.env docker-compose.yml
 
-          echo "Pulling: $BACKEND_IMAGE"
-          docker pull "$BACKEND_IMAGE"
-          echo "Pulling: $FRONTEND_IMAGE"
-          docker pull "$FRONTEND_IMAGE"
-
-          # 레포다이제스트로 고정 실행 (태그 드리프트 방지)
-          BACKEND_REF=$(docker inspect --format='{{index .RepoDigests 0}}' "$BACKEND_IMAGE")
-          FRONTEND_REF=$(docker inspect --format='{{index .RepoDigests 0}}' "$FRONTEND_IMAGE")
-          echo "Resolved: backend=$BACKEND_REF"
-          echo "Resolved: frontend=$FRONTEND_REF"
-
-          docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
-
-          # --- env-file을 $HOME 기준으로 조건부 적용 ---
-          ENV_PATH="$HOME/bandeutseolap/backend.env"
-          ENV_FLAG=""
-          if [ -f "$ENV_PATH" ]; then
-            ENV_FLAG="--env-file $ENV_PATH"
-          else
-            echo "::warning::$ENV_PATH not found; starting backend without env-file"
-          fi
-
-          # 교체 실행
-          docker rm -f bandeutseolap-backend 2>/dev/null || true
-          docker run -d --name bandeutseolap-backend \
-            --restart=always --network "$NET" \
-            -p 8080:8080 \
-            $ENV_FLAG \
-            "$BACKEND_REF"
-
-          docker rm -f bandeutseolap-frontend 2>/dev/null || true
-          docker run -d --name bandeutseolap-frontend \
-            --restart=always --network "$NET" \
-            -p 80:80 \
-            "$FRONTEND_REF"
-
-          # 프런트 간단 헬스체크
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1/ >/dev/null; then echo "Frontend OK"; break; fi
-            sleep 2
-            if [ $i -eq 30 ]; then echo "Frontend healthcheck failed"; exit 1; fi
-          done
-
-          # 백엔드 Actuator 헬스체크 
-          if curl -fsS http://bandeutseolap-backend:8080/actuator/health >/dev/null 2>&1; then
-            echo "Backend OK"
-          else
-            echo "Backend healthcheck skipped (add actuator if needed)"
-          fi
-
-      # 배포 결과 확인 (실행 이미지/포트/버전 파일)
-      - name: Post-check (which image & ports)
+      - name: Deploy with docker compose
+        env:
+          COMPOSE_PROJECT_NAME: bandeutseolap
         run: |
-          set -euxo pipefail
-          echo "== host =="; hostname; whoami
-          echo "== docker ps =="
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          docker compose pull
+          docker compose up -d
+          docker image prune -f
+
+      - name: Post-check
+        run: |
+          set -euo pipefail
+          docker compose ps
           docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
-          echo "== running image digests =="
-          for c in bandeutseolap-backend bandeutseolap-frontend; do
-            printf "$c -> "
-            docker inspect -f '{{.Config.Image}}  (imageID={{.Image}})' "$c"
-          done
-          echo "== who binds :80 on host? =="; ss -ltnp 'sport = :80' || true
-          echo "== frontend version.txt (if baked) =="; curl -fsS http://127.0.0.1/version.txt || true
-
-      # DB 연결 GitHub Secrets 워크플로우 실행 시,.backend.env 디버깅
-
-      - name: Create .backend.env
-        run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .backend.env
-          echo "DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}" >> .backend.env
-          echo "DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}" >> .backend.env
-          echo "SPRING_JACKSON_TIME_ZONE=Asia/Seoul" >> .backend.env
