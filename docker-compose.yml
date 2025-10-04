@@ -1,0 +1,33 @@
+version: "3.9"  # Docker-compose 버전
+
+services:
+  frontend:
+    image: ghcr.io/yelinz515/bandeutseolap/frontend:latest
+    container_name: bandeutseolap-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks: [mynet]
+
+  backend:
+    image: ghcr.io/yelinz515/bandeutseolap/backend:latest
+    container_name: bandeutseolap-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.backend.env   # DB 접속정보 등 민감값 분리
+    restart: unless-stopped
+    networks: [mynet]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    networks: [mynet]
+
+networks:
+  mynet:
