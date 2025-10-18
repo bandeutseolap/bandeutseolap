@@ -23,3 +23,10 @@ public class BoardController {
         return "Board API 해보자";
     }
 }
+
+
+    @GetMapping("/kskTEST")
+    public String testKSKApi() {
+        return "Board API 연결 테스트입니다.";
+    }
+}
