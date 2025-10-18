@@ -22,4 +22,8 @@ public class BoardController {
     public String testBoardApi() {
         return "Board API 해보자";
     }
+    @GetMapping("/hyj")
+    public String testhyjApi() {
+        return "hyj API 해보자";
+    }
 }
