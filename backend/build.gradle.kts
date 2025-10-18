@@ -25,8 +25,18 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	implementation ("org.mariadb.jdbc:mariadb-java-client:3.4.1")
+	implementation("org.projectlombok:lombok:1.18.30")
+	annotationProcessor("org.projectlombok:lombok:1.18.30")
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+//	implementation("org.springframework.kafka:spring-kafka")
+//	implementation("org.apache.kafka:kafka-streams") // optional - only needed when using kafka-streams
+//	testImplementation("org.springframework.kafka:spring-kafka-test")
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+
 }
 
 tasks.withType<Test> {
@@ -53,12 +63,15 @@ sourceSets {
 }
 
 tasks.processResources {
-	/*dependsOn ("copyReactBuildFiles")*/ // 도커 빌드 전까지 주석
+//	dependsOn ("copyReactBuildFiles") // 도커 빌드 전까지 주석
 	duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
+/*tasks.bootJar {
+	dependsOn ("copyReactBuildFiles")
+}*/
 
 tasks {
-	/* // 도커 빌드 전까지 주석
+	// 도커 빌드 전까지 주석
 	val installReact by registering(Exec::class) {
 		workingDir = file(frontendDir)
 		inputs.dir(frontendDir)
@@ -101,5 +114,5 @@ tasks {
 	* ./gradlew bootJar 실행
 	*/
 
-	 */
+
 }
