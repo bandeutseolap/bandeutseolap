@@ -25,6 +25,7 @@ Thumbs.db
 .gitignore
 
 # 프론트엔드 관련 전부 제외 (우선 백엔드만 진행)
+#frontend_bk/
 frontend/
 node_modules/
 

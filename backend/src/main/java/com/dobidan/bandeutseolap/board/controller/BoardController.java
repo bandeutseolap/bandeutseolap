@@ -1,5 +1,6 @@
 package com.dobidan.bandeutseolap.board.controller;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,13 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
  * - URL 매핑: /board
  */
 
+@CrossOrigin(origins = "http://localhost:5173") // 필요한 도메인만!
 @RestController
 @RequestMapping("/board")
 public class BoardController {
 
     @GetMapping("/test")
     public String testBoardApi() {
-        return "Board API 해보자";
+        return "BE : Board API 해보자";
     }
 
 
