@@ -7,6 +7,7 @@ plugins {
 	java
 	id("org.springframework.boot") version "3.5.4"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("com.github.node-gradle.node") version "7.0.2" // ★ 추가
 }
 
 group = "com.dobidan"
@@ -25,7 +26,6 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.mariadb.jdbc:mariadb-java-client:3.3.2")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
@@ -42,72 +42,58 @@ tasks.withType<Test> {
 }
 
 
-/* 2025.08.17
- * SpringBoot (Back-End)와 React (Front-End)를 하나의 패키지로 만들자
- * SpringBoot 빌드될 때 React가 먼저 빌드되고,
- * 결과물을 SpringBoot 빌드 결과물에 포함시킨다는 내용
- *
- * 둘 다 실행시킬 필요 없이 서버만 키면 locahost:8080 프론트엔드 내용 같이 나오게
+/* 2025.10.19
+ * 서버(Spring Boot)만 실행해도 localhost:8080에서 Vue 정적 파일이 같이 뜨도록 Gradle에서 프론트 빌드를 자동화
  */
 
-val frontendDir = file("${projectDir.parent}/frontend")
-
-sourceSets {
-	named("main") {
-		resources {
-			srcDirs("$projectDir/src/main/resources")
-		}
-	}
+node {
+	// Node 자동 다운로드(로컬에 Node 없어도 됨)
+	download.set(true)
+	version.set("20.16.0")
+	npmVersion.set("10.8.1")
+	// Vue 폴더 경로
+	workDir.set(file("${project.projectDir}/.gradle/node"))
+	// npm이 실행될 디렉토리
+	nodeProjectDir.set(file("${project.rootDir}/../frontend"))
 }
 
+// npm install
+//val npmInstall by tasks.registering(com.github.gradle.node.npm.task.NpmInstallTask::class)
+
+// npm run build (Vite)
+val npmBuild by tasks.registering(com.github.gradle.node.npm.task.NpmTask::class) {
+	dependsOn("npmInstall")
+	args.set(listOf("run", "build"))
+	workingDir.set(file("${project.rootDir}/../frontend"))
+	inputs.dir("${project.rootDir}/../frontend/src")
+	inputs.file("${project.rootDir}/../frontend/package.json")
+	inputs.file("${project.rootDir}/../frontend/package-lock.json")
+	outputs.dir("${project.rootDir}/../frontend/dist")
+}
+
+// Vue dist → Spring 정적 리소스로 복사
+val copyFrontend by tasks.registering(Copy::class) {
+	dependsOn(npmBuild)
+	from("${project.rootDir}/../frontend/dist")
+//	into("$buildDir/generated-resources/frontend") // 임시 복사 위치
+	into("$buildDir/resources/main/static") // 임시 복사 위치
+}
+
+// 정적 리소스 포함시키기
 tasks.processResources {
-	/*dependsOn ("copyReactBuildFiles")*/ // 도커 빌드 전까지 주석
-	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	dependsOn(copyFrontend)
+//	from("$buildDir/generated-resources/frontend") {
+//		// dist의 index.html, assets/* 등을 포함
+//		into("") // classpath:/ 에 루트로 포함 -> /static 과 동일 효과
+//	}
 }
 
-tasks {
-	/* // 도커 빌드 전까지 주석
-	val installReact by registering(Exec::class) {
-		workingDir = file(frontendDir)
-		inputs.dir(frontendDir)
-		group = BasePlugin.BUILD_GROUP
+// 배포/실행 산출물에도 프론트 포함되게
+//tasks.bootJar {
+//	dependsOn(tasks.processResources)
+//}
 
-		if (System.getProperty("os.name").lowercase(Locale.getDefault()).contains("windows")) {
-			commandLine("npm.cmd", "audit", "fix")
-			commandLine("npm.cmd", "install")
-		} else {
-			commandLine("npm", "audit", "fix")
-			commandLine("npm", "install")
-		}
-	}
-
-	val buildReact by registering(Exec::class) {
-		dependsOn(installReact)
-		workingDir = file(frontendDir)
-		inputs.dir(frontendDir)
-		group = BasePlugin.BUILD_GROUP
-
-		if (System.getProperty("os.name").lowercase(Locale.getDefault()).contains("windows")) {
-			commandLine("npm.cmd", "run-script", "build")
-		} else {
-			commandLine("npm", "run-script", "build")
-		}
-	}
-
-	val copyReactBuildFiles by registering(Copy::class) {
-		dependsOn(buildReact)
-		from("$frontendDir/build")
-		into("$projectDir/src/main/resources/static")
-	}
-
-	/*
-	* 로컬 환경에서 개발 시,  불필요하게 npm install과 react build가 실행
-	* -> 배포 시에만 React 빌드 파일 포함시키기
-	* tasks.bootJar {
-		dependsOn ("copyReactBuildFiles")
-	  }
-	* ./gradlew bootJar 실행
-	*/
-
-	 */
-}
+// 로컬 실행에서도 프론트 포함(HMR 안 쓰는 경우)
+//tasks.bootRun {
+//	dependsOn(tasks.processResources)
+//}
