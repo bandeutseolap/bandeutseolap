@@ -8,7 +8,7 @@ COPY package*.json ./
 RUN npm ci
 
 # 소스 복사 및 빌드
-COPY ../frontend_bk .
+COPY ../frontend .
 RUN npm run build
 
 # ---- 2단계: Nginx로 정적 파일 서빙 ----
