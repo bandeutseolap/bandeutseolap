@@ -43,9 +43,6 @@ out/
 .vscode/
 
 # [2025.11.12] npm_modules (lib_root)
-node_modules/
-
-# [2025.11.12] Vue
-dist/
+/node_modules/
 
 application.yml
