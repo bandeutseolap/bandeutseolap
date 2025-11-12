@@ -42,4 +42,7 @@ out/
 # VS Code
 .vscode/
 
+# [2025.11.12] npm_modules (lib_root)
+/node_modules/
+
 application.yml
