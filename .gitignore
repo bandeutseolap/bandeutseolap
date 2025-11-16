@@ -1,17 +1,31 @@
-# common
+# ──────────────────────────────
+# Common / General
+# ──────────────────────────────
 HELP.md
+.DS_Store
+Thumbs.db
+*.log
 
-# Gradle
-.gradle/                           # 캐시
-/build/                            # 루트 빌드 산출물
-/backend/.gradle/                  # 백엔드 캐시
-/backend/build/                    # 백엔드 빌드 산출물
+# ──────────────────────────────
+# Environment Files
+# ──────────────────────────────
+.env
+.env.*.local
+application.yml
+
+# ──────────────────────────────
+# Gradle (Java Backend)
+# ──────────────────────────────
+.gradle/                         # Gradle cache
+/build/                          # Root build output
+/backend/.gradle/                # Backend Gradle cache
+/backend/build/                  # Backend build output
 
 # Gradle Wrapper
 gradle/wrapper/gradle-wrapper.jar
 gradle/wrapper/gradle-wrapper.properties
 
-# STS
+# STS / Eclipse
 .apt_generated
 .classpath
 .factorypath
@@ -23,8 +37,10 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+# ──────────────────────────────
 # IntelliJ IDEA
-.idea
+# ──────────────────────────────
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -32,17 +48,32 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+# ──────────────────────────────
 # NetBeans
+# ──────────────────────────────
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-# VS Code
+# ──────────────────────────────
+# VSCode
+# ──────────────────────────────
 .vscode/
 
-# [2025.11.12] npm_modules (lib_root)
+# ──────────────────────────────
+# Node (Only if root-level node_modules exists)
+# ──────────────────────────────
 /node_modules/
 
-application.yml
+# ──────────────────────────────
+# Build Outputs (General)
+# ──────────────────────────────
+dist/
+build/
+
+# ──────────────────────────────
+# Docker (Optional)
+# ──────────────────────────────
+docker-temp/
