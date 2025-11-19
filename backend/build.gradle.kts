@@ -19,14 +19,33 @@ repositories {
 }
 
 dependencies {
+	// Web
 	implementation("org.springframework.boot:spring-boot-starter-web")
+
+	// Security
+	implementation("org.springframework.boot:spring-boot-starter-security")
+
+	// JPA
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
+	// Bean Validation (요청 DTO 검증용)
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+
+	// MariaDB
+	runtimeOnly("org.mariadb.jdbc:mariadb-java-client:3.3.3")
+
+	// JWT
+	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+
+	// Lombok
+	compileOnly("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok")
+
+	// Test
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-	// Database
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("com.fasterxml.jackson.datatype:jackson-datatype-hibernate5")
-	implementation("org.mariadb.jdbc:mariadb-java-client:3.3.3")
 }
 
 tasks.withType<Test> {
