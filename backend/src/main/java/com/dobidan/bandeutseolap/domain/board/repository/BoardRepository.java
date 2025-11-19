@@ -1,6 +1,7 @@
-package com.dobidan.bandeutseolap.board.repository;
+package com.dobidan.bandeutseolap.domain.board.repository;
 
-import com.dobidan.bandeutseolap.board.entity.Board;
+
+import com.dobidan.bandeutseolap.domain.board.entity.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

@@ -1,4 +1,4 @@
-package com.dobidan.bandeutseolap.board.service;
+package com.dobidan.bandeutseolap.domain.board.service;
 
 import org.springframework.stereotype.Service;
 
