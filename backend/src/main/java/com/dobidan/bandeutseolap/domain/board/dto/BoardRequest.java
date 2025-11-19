@@ -1,4 +1,4 @@
-package com.dobidan.bandeutseolap.board.dto;
+package com.dobidan.bandeutseolap.domain.board.dto;
 
 /**
  * BoardRequest

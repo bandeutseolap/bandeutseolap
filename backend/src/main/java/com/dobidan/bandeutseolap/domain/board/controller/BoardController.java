@@ -1,4 +1,4 @@
-package com.dobidan.bandeutseolap.board.controller;
+package com.dobidan.bandeutseolap.domain.board.controller;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;

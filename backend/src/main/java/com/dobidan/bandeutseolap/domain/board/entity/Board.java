@@ -1,9 +1,6 @@
-package com.dobidan.bandeutseolap.board.entity;
+package com.dobidan.bandeutseolap.domain.board.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 /**
  * Board
@@ -20,10 +17,12 @@ import jakarta.persistence.Id;
  *   추후 title, content, 작성자, 작성일 등 컬럼을 확장할 수 있음.
  */
 @Entity
+@Table(name="board")
 public class Board {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "board_id")
     private Long id;
 
     // 추후 title, content 등의 필드를 추가 예정
