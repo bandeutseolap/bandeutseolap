@@ -4,6 +4,7 @@ import com.dobidan.bandeutseolap.domain.user.entity.User;
 import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,7 @@ import static org.springframework.security.core.userdetails.User.withUsername;
  */
 @Service
 @RequiredArgsConstructor
-public class CustomUserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
     /**
      * loadUserByUsername(String username)
