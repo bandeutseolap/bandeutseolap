@@ -21,13 +21,19 @@ services:
     restart: unless-stopped
     networks: [mynet]
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+  redis:
+    image: redis:7-alpine
+    container_name: redis
     ports:
-      - "8081:8080"
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
     networks: [mynet]
 
 networks:
   mynet:
+
+volumes:
+  redis_data:
