@@ -120,10 +120,11 @@ jobs:
           docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
 
 
-      - name: Deploy with docker compose
+      - name: Deploy with docker cogose
         env:
           COMPOSE_PROJECT_NAME: bandeutseolap
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          DOCKER_CONFIG: ${{ runner.temp }}/.docker  # 이거 추가
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
