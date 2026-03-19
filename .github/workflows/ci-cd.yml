@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main,develop ] # main : 안정 버전 / develop : 통합 테스트용
   workflow_dispatch:
     inputs:
       tag:
@@ -123,15 +123,10 @@ jobs:
       - name: Deploy with docker compose
         env:
           COMPOSE_PROJECT_NAME: bandeutseolap
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
           docker compose pull
           docker compose up -d
           docker image prune -f
-
-      - name: Post-check
-        run: |
-          set -euo pipefail
-          docker compose ps
-          docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
