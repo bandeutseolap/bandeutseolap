@@ -3,87 +3,60 @@ package com.dobidan.bandeutseolap.domain.auth.controller;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
-import com.dobidan.bandeutseolap.domain.user.entity.User;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
-import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
+import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * AuthController
  *
- * - 회원가입(/auth/signup)
- * - 로그인(/auth/login)
- * 을 담당하는 인증 관련 컨트롤러.
+ * - 회원가입, 로그인, 로그아웃 요청을 처리하는 인증 관련 컨트롤러.
+ * - 비즈니스 로직은 AuthService에 위임한다.
  */
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     /**
-     * 회원가입 API
+     * 회원가입 API - POST /auth/signup
      *
-     * 1. username 중복 체크
-     * 2. 비밀번호 암호화
-     * 3. DB에 User 저장
+     * - username 중복 체크
+     * - 비밀번호 암호화 후 DB 저장
      */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
-
-        // 1. username 중복 체크
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("이미 존재하는 사용자입니다.");
-        }
-
-        // 2. 비밀번호 암호화 후 User 엔티티 생성
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword())) // 비밀번호 암호화
-                .role("USER") // 기본 권한 USER
-                .build();
-
-        // 3. DB 저장
-        userRepository.save(user);
-
+        authService.signup(request);
         return ResponseEntity.ok("회원가입 완료");
     }
 
     /**
-     * 로그인 API
+     * 로그인 API - POST /auth/login
      *
-     * 1. AuthenticationManager를 통해 아이디/비밀번호 검증
-     * 2. 인증 성공 시 JWT 토큰 생성
-     * 3. Access Token 응답으로 반환
+     * - 아이디/비밀번호 검증
+     * - Access Token + Refresh Token 발급
+     * - Refresh Token은 Redis에 저장
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 
-        // 1. 아이디/비밀번호 검증 (Spring Security가 내부에서 UserDetailsService + PasswordEncoder 사용)
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-
-        // 2. 인증 정보에서 username, 권한을 꺼내 JWT 생성
-        String token = jwtTokenProvider.createToken(
-                authentication.getName(),              // username
-                authentication.getAuthorities()        // roles
-        );
-
-        // 3. 토큰을 응답으로 반환
-        return ResponseEntity.ok(new LoginResponse(token));
+    /**
+     * 로그아웃 API - POST /auth/logout
+     *
+     * - 인증된 사용자의 Refresh Token을 Redis에서 삭제
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@AuthenticationPrincipal UserDetails userDetails) {
+        authService.logout(userDetails.getUsername());
+        return ResponseEntity.ok("로그아웃 완료");
     }
 }
+
