@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   workflow_dispatch:
     inputs:
       tag:
@@ -33,7 +33,7 @@ jobs:
         if: matrix.part == 'backend'
         uses: actions/setup-java@v4
         with:
-          distribution: temurin #JDK 배포판
+          distribution: temurin
           java-version: '17'
 
       - name: Setup Node (frontend only)
@@ -72,7 +72,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.part }}
           cache-to: type=gha,scope=${{ matrix.part }},mode=max
 
-  # 2) 서버 배포(self-hosted 러너 컨테이너에서 compose 실행)
+  # 2) 서버 배포
   deploy:
     runs-on: [self-hosted]
     needs: build-push
@@ -100,29 +100,17 @@ jobs:
           DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
           SPRING_JACKSON_TIME_ZONE=Asia/Seoul
           JWT_SECRET=${{ secrets.JWT_SECRET }}
+          SPRING_DATA_REDIS_HOST=redis
+          SPRING_DATA_REDIS_PORT=6379
+          SPRING_DATA_REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
           EOF
           ls -al .backend.env docker-compose.yml
 
       - name: Deploy with docker compose
         env:
           COMPOSE_PROJECT_NAME: bandeutseolap
-        run: |
-          set -euo pipefail
-          cd "$GITHUB_WORKSPACE"
-          docker compose pull
-          docker compose up -d
-          docker image prune -f
-
-      - name: Post-check
-        run: |
-          set -euo pipefail
-          docker compose ps
-          docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
-
-
-      - name: Deploy with docker compose
-        env:
-          COMPOSE_PROJECT_NAME: bandeutseolap
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          DOCKER_CONFIG: ${{ runner.temp }}/.docker
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
