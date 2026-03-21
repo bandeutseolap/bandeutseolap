@@ -3,6 +3,7 @@ package com.dobidan.bandeutseolap.domain.board.repository;
 
 import com.dobidan.bandeutseolap.domain.board.entity.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * BoardRepository
@@ -16,5 +17,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * - 추가로 필요한 쿼리는 메서드 이름 기반 쿼리 메서드 정의 가능
  *   ex) List<Board> findByTitleContaining(String keyword);
  */
+
+@Repository
 public interface BoardRepository extends JpaRepository<Board, Long> {
 }
