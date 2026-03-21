@@ -29,14 +29,28 @@ spring:
         port: ${SPRING_DATA_REDIS_PORT}
         password: ${SPRING_DATA_REDIS_PASSWORD}
 
+  kafka:
+    bootstrap-servers : ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+        group-id: bandeutseolap
+        auto-offset-reset: earliest
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
 logging:
   charset:
-    console: euc-kr
+    console: UTF-8
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.web: DEBUG
     com.cupid.qufit: DEBUG
+    org.apache.kafka: INFO
+    org.springframework.kafka: INFO
+    com.dobidan.bandeutseolap: INFO
 
 server:
   port: 8080
