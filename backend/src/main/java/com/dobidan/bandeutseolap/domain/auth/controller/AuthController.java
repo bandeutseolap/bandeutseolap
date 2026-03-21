@@ -2,6 +2,7 @@ package com.dobidan.bandeutseolap.domain.auth.controller;
 
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
+import com.dobidan.bandeutseolap.domain.auth.dto.ReissueRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -54,9 +55,21 @@ public class AuthController {
      * - 인증된 사용자의 Refresh Token을 Redis에서 삭제
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails) {
         authService.logout(userDetails.getUsername());
         return ResponseEntity.ok("로그아웃 완료");
+    }
+
+    /**
+     * 토큰 재발급 API - POST /auth/reissue
+     *
+     * - Refresh Token 유효성 검증
+     * - Redis에 저장된 Refresh Token과 비교
+     * - 새 Access Token 발급 후 반환
+     */
+    @PostMapping("/reissue")
+    public ResponseEntity<LoginResponse> reissue(@RequestBody ReissueRequest request){
+        return ResponseEntity.ok(authService.reissue(request.getRefreshToken()));
     }
 }
 
