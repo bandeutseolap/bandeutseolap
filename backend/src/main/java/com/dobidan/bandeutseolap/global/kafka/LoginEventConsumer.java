@@ -26,7 +26,7 @@ public class LoginEventConsumer {
      * - 파싱 후 UserLog DB 저장
      */
 
-    @KafkaListener(topics = "auth.login.event",groupId= "bandeutseolap")
+    @KafkaListener(topics = "auth.login.event",groupId= "band-bandeutseolap-auth")
     public void consumeLoginEvent (String message){
         log.info("kaka 이벤트 수신 - message : {}",message);
 
