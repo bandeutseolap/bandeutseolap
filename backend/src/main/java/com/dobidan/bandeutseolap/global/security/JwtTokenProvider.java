@@ -34,7 +34,11 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private final long validityInMs = 1000L * 60 * 60;
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
 
     /**
      * secretKey를 기반으로 서명에 사용할 Key 객체 생성
@@ -50,19 +54,38 @@ public class JwtTokenProvider {
      * - 토큰의 payload(claims)에 사용자 정보를 저장
      * - HS256 알고리즘으로 서명
      */
-    public String createToken(String username, Collection<? extends GrantedAuthority> roles) {
+    public String createAccessToken(String username, Collection<? extends GrantedAuthority> roles) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("roles", roles.stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList()));
 
         Date now = new Date();
-        Date expire = new Date(now.getTime() + validityInMs);
+        Date expire = new Date(now.getTime() + accessExpiration);
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(expire)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /**
+     * createRefreshToken()
+     *
+     * - username 기반으로 Refresh Token 생성
+     * - Access Token과 달리 username만 저장 (payload 최소화)
+     * - 만료시간 : jwt.refresh-expiration 설정값 기준 (기본 14일)
+     * - 생성된 토큰은 Redis에 저장하여 관리
+     */
+
+    public String createRefreshToken (String username) {
+        Date now = new Date();
+        return  Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + refreshExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
