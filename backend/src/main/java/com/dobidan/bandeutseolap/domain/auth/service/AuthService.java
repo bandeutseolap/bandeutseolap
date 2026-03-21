@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTokenService redisTokenService;
+    private final UserDetailsService userDetailsService;
 
     // 회원가입
     public void signup(SignupRequest request) {
@@ -75,4 +78,35 @@ public class AuthService {
     public void logout(String username) {
         redisTokenService.deleteRefreshToken(username);
     }
+
+
+    // 토큰 재발급
+    public LoginResponse reissue (String refreshToken) {
+
+
+        // 1. Refresh Token 유효성 검증
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지않은 RefreshToken 정보입니다.");
+        }
+
+        // 2. username 정보 추출
+        String username  = jwtTokenProvider.getUsername(refreshToken);
+
+        // 3. Redis에 저장된 토큰과 비교
+        String savedToken = redisTokenService.getRefreshToken(username);
+
+        if(!refreshToken.equals(savedToken)) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
+        }
+
+        // 4. 새 Access Token 발급
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        String newAccessToken = jwtTokenProvider.createAccessToken(username,userDetails.getAuthorities());
+
+        return new LoginResponse(newAccessToken, refreshToken);
+    }
+
+
+
+
 }
