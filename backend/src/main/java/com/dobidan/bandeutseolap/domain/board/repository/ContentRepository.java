@@ -3,6 +3,7 @@ package com.dobidan.bandeutseolap.domain.board.repository;
 import com.dobidan.bandeutseolap.domain.board.entity.Content;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 /**
  * ContentRepository
