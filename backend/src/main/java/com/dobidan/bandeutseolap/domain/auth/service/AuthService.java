@@ -80,8 +80,9 @@ public class AuthService {
     }
 
     // 로그아웃
-    public void logout(String username) {
+    public void logout(String username,String ipAddress) {
         redisTokenService.deleteRefreshToken(username);
+        loginEventProducer.sendLoginEvent(username, ipAddress, "LOGOUT");
     }
 
 
