@@ -117,7 +117,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           docker compose pull
           docker compose up -d
-          docker image prune -f
+          docker image prune -a -f --filter "until=24h"
 
       - name: Post-check
         run: |
