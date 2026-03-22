@@ -1,5 +1,6 @@
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
-import BoardView from '../../views/BoardView.vue'
+import BoardListView from '../../views/BoardListView.vue'
+import BoardDetailView from '../../views/BoardDetailView.vue'
 
 export default [
     {
@@ -9,7 +10,12 @@ export default [
             {
                 path: '',
                 name: 'boards',
-                component: BoardView
+                component: BoardListView
+            },
+            {
+                path: ':id',
+                name: 'boards-detail',
+                component: BoardDetailView
             }
         ]
     }

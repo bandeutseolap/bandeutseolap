@@ -9,10 +9,10 @@
       <div class="panel-body">
         <nav class="sidebar-nav">
           <router-link to="/" class="sidebar-link">Dashboard</router-link>
-          <router-link to="/boards" class="sidebar-link">Documents</router-link>
-          <router-link to="/projects" class="sidebar-link">Projects</router-link>
-          <router-link to="/tasks" class="sidebar-link">Tasks</router-link>
-          <router-link to="/settings" class="sidebar-link">Settings</router-link>
+          <router-link to="/boards" class="sidebar-link">Board</router-link>
+          <router-link to="/" class="sidebar-link">메뉴</router-link>
+          <router-link to="/" class="sidebar-link">메뉴</router-link>
+          <router-link to="/" class="sidebar-link">메뉴</router-link>
         </nav>
       </div>
     </div>
