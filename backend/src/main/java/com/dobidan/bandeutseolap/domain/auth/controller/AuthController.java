@@ -5,6 +5,8 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.ReissueRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
  * - 비즈니스 로직은 AuthService에 위임한다.
  */
 
+@Tag(name = "Auth", description = "인증 관련 API (회원가입, 로그인, 로그아웃, 토큰 재발급)")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class AuthController {
      * - username 중복 체크
      * - 비밀번호 암호화 후 DB 저장
      */
+    @Operation(summary = "회원가입", description = "username 중복 체크 후 비밀번호 암호화하여 저장")
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
         authService.signup(request);
@@ -45,6 +49,7 @@ public class AuthController {
      * - Access Token + Refresh Token 발급
      * - Refresh Token은 Redis에 저장
      */
+    @Operation(summary = "로그인", description = "아이디/비밀번호 검증 후 Access Token + Refresh Token 발급")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
 
@@ -57,6 +62,7 @@ public class AuthController {
      *
      * - 인증된 사용자의 Refresh Token을 Redis에서 삭제
      */
+    @Operation(summary = "로그아웃", description = "인증된 사용자의 Refresh Token을 Redis에서 삭제")
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,HttpServletRequest httpRequest) {
 
@@ -72,6 +78,7 @@ public class AuthController {
      * - Redis에 저장된 Refresh Token과 비교
      * - 새 Access Token 발급 후 반환
      */
+    @Operation(summary = "토큰 재발급", description = "Refresh Token 검증 후 새 Access Token 발급")
     @PostMapping("/reissue")
     public ResponseEntity<LoginResponse> reissue(@RequestBody ReissueRequest request){
         return ResponseEntity.ok(authService.reissue(request.getRefreshToken()));
