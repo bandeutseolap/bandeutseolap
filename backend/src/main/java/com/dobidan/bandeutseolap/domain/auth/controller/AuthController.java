@@ -5,7 +5,6 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.ReissueRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,10 +45,8 @@ public class AuthController {
      * - Refresh Token은 Redis에 저장
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-
-        String ipAddress = httpRequest.getRemoteAddr();
-        return ResponseEntity.ok(authService.login(request,ipAddress));
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 
     /**
@@ -58,10 +55,8 @@ public class AuthController {
      * - 인증된 사용자의 Refresh Token을 Redis에서 삭제
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,HttpServletRequest httpRequest) {
-
-        String ipAddress = httpRequest.getRemoteAddr();
-        authService.logout(userDetails.getUsername(),ipAddress);
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails) {
+        authService.logout(userDetails.getUsername());
         return ResponseEntity.ok("로그아웃 완료");
     }
 

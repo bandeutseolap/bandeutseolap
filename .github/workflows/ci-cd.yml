@@ -103,7 +103,6 @@ jobs:
           SPRING_DATA_REDIS_HOST=redis
           SPRING_DATA_REDIS_PORT=6379
           SPRING_DATA_REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-          KAFKA_BOOTSTRAP_SERVERS=${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
           EOF
           ls -al .backend.env docker-compose.yml
 
@@ -117,7 +116,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           docker compose pull
           docker compose up -d
-          docker image prune -a -f --filter "until=24h"
+          docker image prune -f
 
       - name: Post-check
         run: |
