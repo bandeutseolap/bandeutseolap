@@ -34,6 +34,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTokenService redisTokenService;
     private final UserDetailsService userDetailsService;
+    private final LoginEventProducer loginEventProducer;
 
     // 회원가입
     public void signup(SignupRequest request) {
@@ -75,13 +76,23 @@ public class AuthService {
     }
 
     // 로그아웃
-    public void logout(String username) {
+
+    public void logout(String username, String ipAddress, String accesstoken) {
+
+        // 1. Refresh Token 삭제
         redisTokenService.deleteRefreshToken(username);
+
+        // 2. 삭제한 Refresh Token 을 블랙리스트에 추가 (남은 만료시간 계산)
+        long remainingExpiration = jwtTokenProvider.getRemainingExpiration(accesstoken); //accessToken의 남은 만료시간 계산
+        redisTokenService.addBlacklist(accesstoken, remainingExpiration); //accessToken의 남은 만료시간 계산
+
+        redisTokenService.isBlacklisted(username);
+        loginEventProducer.sendLoginEvent(username, ipAddress, "LOGOUT");
     }
 
 
     // 토큰 재발급
-    public LoginResponse reissue (String refreshToken) {
+    public LoginResponse reissue(String refreshToken) {
 
 
         // 1. Refresh Token 유효성 검증
@@ -90,23 +101,20 @@ public class AuthService {
         }
 
         // 2. username 정보 추출
-        String username  = jwtTokenProvider.getUsername(refreshToken);
+        String username = jwtTokenProvider.getUsername(refreshToken);
 
         // 3. Redis에 저장된 토큰과 비교
         String savedToken = redisTokenService.getRefreshToken(username);
 
-        if(!refreshToken.equals(savedToken)) {
+        if (!refreshToken.equals(savedToken)) {
             throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
         }
 
         // 4. 새 Access Token 발급
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        String newAccessToken = jwtTokenProvider.createAccessToken(username,userDetails.getAuthorities());
+        String newAccessToken = jwtTokenProvider.createAccessToken(username, userDetails.getAuthorities());
 
         return new LoginResponse(newAccessToken, refreshToken);
     }
-
-
-
 
 }

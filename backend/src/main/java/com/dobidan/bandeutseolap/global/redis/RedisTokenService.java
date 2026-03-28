@@ -1,6 +1,7 @@
 package com.dobidan.bandeutseolap.global.redis;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
  * - 만료시간 : jwt.refresh-expiration 설정값 기준 (기본 14일)
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RedisTokenService {
@@ -45,4 +47,19 @@ public class RedisTokenService {
         redisTemplate.delete("RT:" + username);
     }
 
+    //Access Token 블랙리스트에 저장
+    public void addBlacklist(String accessToken, long expiration) {
+        redisTemplate.opsForValue().set(
+                "BL: " + accessToken,
+                "logout",
+                expiration,
+                TimeUnit.MILLISECONDS
+        );
+    }
+
+    public boolean isBlacklisted(String accessToken){
+        boolean result = Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
+        log.info("블랙리스트 확인 - token: {}, result: {}", accessToken, result);
+        return Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
+    }
 }
