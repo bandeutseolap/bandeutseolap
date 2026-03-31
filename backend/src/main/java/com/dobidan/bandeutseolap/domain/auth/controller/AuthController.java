@@ -5,7 +5,10 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.ReissueRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
  * - 비즈니스 로직은 AuthService에 위임한다.
  */
 
+@Slf4j
+@Tag(name = "Auth", description = "인증 관련 API (회원가입, 로그인, 로그아웃, 토큰 재발급)")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -45,8 +50,9 @@ public class AuthController {
      * - Refresh Token은 Redis에 저장
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        return ResponseEntity.ok(authService.login(request, ipAddress));
     }
 
     /**
@@ -55,8 +61,11 @@ public class AuthController {
      * - 인증된 사용자의 Refresh Token을 Redis에서 삭제
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails) {
-        authService.logout(userDetails.getUsername());
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails, HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String authHeader = httpRequest.getHeader("Authorization");
+        String accessToken = authHeader.substring(7); //Authorization 헤더 형식: Bearer eyJhbG...
+        authService.logout(userDetails.getUsername(),ipAddress,accessToken);
         return ResponseEntity.ok("로그아웃 완료");
     }
 
@@ -70,6 +79,11 @@ public class AuthController {
     @PostMapping("/reissue")
     public ResponseEntity<LoginResponse> reissue(@RequestBody ReissueRequest request){
         return ResponseEntity.ok(authService.reissue(request.getRefreshToken()));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok("안녕하세요 " + userDetails.getUsername() + "님!");
     }
 }
 

@@ -124,6 +124,16 @@ public class JwtTokenProvider {
             return false;    // 서명 오류, 만료 등 문제 발생
         }
     }
+
+    public long getRemainingExpiration (String token) {
+        Date expiration = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
+        return expiration.getTime() - new Date().getTime();
+    }
 }
 
 

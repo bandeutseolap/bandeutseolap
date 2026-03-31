@@ -5,6 +5,7 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.user.entity.User;
 import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
+import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTokenService redisTokenService;
     private final UserDetailsService userDetailsService;
+    private final LoginEventProducer loginEventProducer;
 
     // 회원가입
     public void signup(SignupRequest request) {
@@ -52,7 +54,7 @@ public class AuthService {
     }
 
     // 로그인
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request,String ipAddress) {
 
         // 1. 아이디 / 비밀번호 검증
         Authentication authentication = authenticationManager.authenticate(
@@ -71,12 +73,16 @@ public class AuthService {
         // 3. Refresh Token Redis에 저장
         redisTokenService.saveRefreshToken(username, refreshToken);
 
+        // 4. kafka 로그인 이벤트 발행
+        loginEventProducer.sendLoginEvent(username,ipAddress,"LOGIN");
+
         return new LoginResponse(accessToken, refreshToken);
     }
 
-    // 로그아웃
-    public void logout(String username) {
+    public void logout(String username, String ipAddress, String accessToken) {
+        redisTokenService.blacklistAccessToken(accessToken);
         redisTokenService.deleteRefreshToken(username);
+        loginEventProducer.sendLoginEvent(username, ipAddress, "LOGOUT");
     }
 
 

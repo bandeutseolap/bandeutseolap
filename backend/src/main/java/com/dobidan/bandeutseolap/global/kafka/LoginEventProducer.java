@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+
 public class LoginEventProducer {
 
     private final KafkaTemplate<String,String> kafkaTemplate;
