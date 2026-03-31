@@ -59,6 +59,7 @@ public class SecurityConfig {
      * - JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
      */
     @Bean
+    @Profile("!local")
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
     {
 
