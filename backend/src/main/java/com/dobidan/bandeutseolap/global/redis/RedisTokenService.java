@@ -57,6 +57,13 @@ public class RedisTokenService {
         );
     }
 
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    public void blacklistAccessToken(String accessToken) {
+        addBlacklist(accessToken, accessExpiration);
+    }
+
     public boolean isBlacklisted(String accessToken){
         boolean result = Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
         log.info("블랙리스트 확인 - token: {}, result: {}", accessToken, result);

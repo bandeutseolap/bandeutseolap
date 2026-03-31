@@ -50,8 +50,9 @@ public class AuthController {
      * - Refresh Token은 Redis에 저장
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        return ResponseEntity.ok(authService.login(request, ipAddress));
     }
 
     /**
@@ -61,7 +62,6 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails, HttpServletRequest httpRequest) {
-
         String ipAddress = httpRequest.getRemoteAddr();
         String authHeader = httpRequest.getHeader("Authorization");
         String accessToken = authHeader.substring(7); //Authorization 헤더 형식: Bearer eyJhbG...

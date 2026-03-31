@@ -5,6 +5,7 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.user.entity.User;
 import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
+import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,7 @@ public class AuthService {
     }
 
     // 로그인
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request,String ipAddress) {
 
         // 1. 아이디 / 비밀번호 검증
         Authentication authentication = authenticationManager.authenticate(
@@ -72,27 +73,21 @@ public class AuthService {
         // 3. Refresh Token Redis에 저장
         redisTokenService.saveRefreshToken(username, refreshToken);
 
+        // 4. kafka 로그인 이벤트 발행
+        loginEventProducer.sendLoginEvent(username,ipAddress,"LOGIN");
+
         return new LoginResponse(accessToken, refreshToken);
     }
 
-    // 로그아웃
-
-    public void logout(String username, String ipAddress, String accesstoken) {
-
-        // 1. Refresh Token 삭제
+    public void logout(String username, String ipAddress, String accessToken) {
+        redisTokenService.blacklistAccessToken(accessToken);
         redisTokenService.deleteRefreshToken(username);
-
-        // 2. 삭제한 Refresh Token 을 블랙리스트에 추가 (남은 만료시간 계산)
-        long remainingExpiration = jwtTokenProvider.getRemainingExpiration(accesstoken); //accessToken의 남은 만료시간 계산
-        redisTokenService.addBlacklist(accesstoken, remainingExpiration); //accessToken의 남은 만료시간 계산
-
-        redisTokenService.isBlacklisted(username);
         loginEventProducer.sendLoginEvent(username, ipAddress, "LOGOUT");
     }
 
 
     // 토큰 재발급
-    public LoginResponse reissue(String refreshToken) {
+    public LoginResponse reissue (String refreshToken) {
 
 
         // 1. Refresh Token 유효성 검증
@@ -101,20 +96,23 @@ public class AuthService {
         }
 
         // 2. username 정보 추출
-        String username = jwtTokenProvider.getUsername(refreshToken);
+        String username  = jwtTokenProvider.getUsername(refreshToken);
 
         // 3. Redis에 저장된 토큰과 비교
         String savedToken = redisTokenService.getRefreshToken(username);
 
-        if (!refreshToken.equals(savedToken)) {
+        if(!refreshToken.equals(savedToken)) {
             throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
         }
 
         // 4. 새 Access Token 발급
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        String newAccessToken = jwtTokenProvider.createAccessToken(username, userDetails.getAuthorities());
+        String newAccessToken = jwtTokenProvider.createAccessToken(username,userDetails.getAuthorities());
 
         return new LoginResponse(newAccessToken, refreshToken);
     }
+
+
+
 
 }
