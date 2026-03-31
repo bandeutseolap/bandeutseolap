@@ -81,4 +81,4 @@ docker-temp/
 # Claude 자동화 (로컬 전용)
 # ──────────────────────────────
 CLAUDE.md
-scripts/
+scripts/..bfg-report/
