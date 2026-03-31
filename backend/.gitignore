@@ -46,3 +46,8 @@ gradle-app.setting
 # BFG Repo Cleaner
 ########################################
 ..bfg-report/
+
+########################################
+# application-local
+########################################
+application-local.yml
