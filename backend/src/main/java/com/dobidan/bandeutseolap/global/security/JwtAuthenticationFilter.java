@@ -1,5 +1,6 @@
 package com.dobidan.bandeutseolap.global.security;
 
+import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+    private final RedisTokenService redisTokenService;
 
     /**
      * doFilterInternal()
@@ -52,11 +54,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = header.substring(7); // "Bearer " 뒤의 문자열만 추출
 
-            // JWT 토큰 검증
+            // JWT 토큰 검증 (서명 + 만료시간 확인)
             if (jwtTokenProvider.validateToken(token)) {
-                String username = jwtTokenProvider.getUsername(token);
+
+                // 블랙리스트 확인 → 로그아웃된 토큰이면 즉시 차단
+                if (redisTokenService.isBlacklisted(token)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 반환
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("Logged out token.");
+                    return; // 다음 필터로 넘기지 않고 즉시 종료
+                }
 
                 // username 기반 유저 정보 조회
+                String username = jwtTokenProvider.getUsername(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 // 인증 객체 생성 (Spring Security 내부 인증 객체)

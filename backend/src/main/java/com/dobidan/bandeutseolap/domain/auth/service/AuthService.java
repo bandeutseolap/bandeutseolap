@@ -80,8 +80,16 @@ public class AuthService {
     }
 
     // 로그아웃
-    public void logout(String username,String ipAddress) {
+    public void logout(String username, String ipAddress, String accessToken) {
+
+        // 1. Refresh Token 삭제
         redisTokenService.deleteRefreshToken(username);
+
+        // 2. Access Token 블랙리스트 등록
+        long remainingExpiration = jwtTokenProvider.getRemainingExpiration(accessToken);
+        redisTokenService.addBlacklist(accessToken, remainingExpiration);
+
+        // 3. Kafka 로그아웃 이벤트 발행
         loginEventProducer.sendLoginEvent(username, ipAddress, "LOGOUT");
     }
 

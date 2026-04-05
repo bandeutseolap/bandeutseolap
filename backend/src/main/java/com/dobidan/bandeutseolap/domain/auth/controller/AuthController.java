@@ -64,10 +64,12 @@ public class AuthController {
      */
     @Operation(summary = "로그아웃", description = "인증된 사용자의 Refresh Token을 Redis에서 삭제")
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,HttpServletRequest httpRequest) {
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,
+                                         HttpServletRequest httpRequest) {
 
         String ipAddress = httpRequest.getRemoteAddr();
-        authService.logout(userDetails.getUsername(),ipAddress);
+        String accessToken = httpRequest.getHeader("Authorization").substring(7).trim(); // 추가
+        authService.logout(userDetails.getUsername(), ipAddress, accessToken); // accessToken 추가
         return ResponseEntity.ok("로그아웃 완료");
     }
 
