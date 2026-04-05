@@ -45,30 +45,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = header.substring(7);
 
+            // JWT 토큰 검증 (서명 + 만료시간 확인)
             if (jwtTokenProvider.validateToken(token)) {
 
-                // 블랙리스트 확인 → 등록된 토큰이면 인증 거부
+                // 블랙리스트 확인 → 로그아웃된 토큰이면 즉시 차단
                 if (redisTokenService.isBlacklisted(token)) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setCharacterEncoding("UTF-8");  // 추가
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 반환
+                    response.setCharacterEncoding("UTF-8");
                     response.getWriter().write("Logged out token.");
-                    return;
+                    return; // 다음 필터로 넘기지 않고 즉시 종료
                 }
 
-                String username = jwtTokenProvider.getUsername(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                // username 기반 유저 정보 조회
+                if (jwtTokenProvider.validateToken(token)) {
 
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                    // 블랙리스트 확인 → 등록된 토큰이면 인증 거부
+                    if (redisTokenService.isBlacklisted(token)) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setCharacterEncoding("UTF-8");  // 추가
+                        response.getWriter().write("Logged out token.");
+                        return;
+                    }
 
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    String username = jwtTokenProvider.getUsername(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
-        }
 
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+        }
     }
 }

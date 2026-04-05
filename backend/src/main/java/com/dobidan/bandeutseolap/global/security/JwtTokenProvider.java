@@ -125,7 +125,14 @@ public class JwtTokenProvider {
         }
     }
 
-    public long getRemainingExpiration (String token) {
+    /**
+     * getRemainingExpiration()
+     *
+     * - 토큰의 남은 만료시간을 밀리초로 반환
+     * - 블랙리스트 등록 시 TTL 설정에 사용
+     */
+    public long getRemainingExpiration(String token) {
+
         Date expiration = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
@@ -133,6 +140,7 @@ public class JwtTokenProvider {
                 .getBody()
                 .getExpiration();
         return expiration.getTime() - new Date().getTime();
+
     }
 }
 

@@ -47,10 +47,9 @@ public class RedisTokenService {
         redisTemplate.delete("RT:" + username);
     }
 
-    //Access Token 블랙리스트에 저장
     public void addBlacklist(String accessToken, long expiration) {
         redisTemplate.opsForValue().set(
-                "BL: " + accessToken,
+                "BL:" + accessToken,
                 "logout",
                 expiration,
                 TimeUnit.MILLISECONDS
@@ -69,4 +68,5 @@ public class RedisTokenService {
         log.info("블랙리스트 확인 - token: {}, result: {}", accessToken, result);
         return Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
     }
+
 }
