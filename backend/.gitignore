@@ -42,3 +42,12 @@ gradle-app.setting
 !gradle-wrapper.jar
 !gradle-wrapper.properties
 
+########################################
+# BFG Repo Cleaner
+########################################
+..bfg-report/
+
+########################################
+# application-local
+########################################
+application-local.yml

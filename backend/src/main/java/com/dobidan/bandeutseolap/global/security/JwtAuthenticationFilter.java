@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,15 +32,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final RedisTokenService redisTokenService;
 
-    /**
-     * doFilterInternal()
-     *
-     * - 요청 헤더에서 Authorization 값을 가져옴
-     * - "Bearer <token>" 형태인지 체크
-     * - 토큰 유효성 검증
-     * - username 꺼내서 DB 조회
-     * - 인증 정보를 SecurityContext 에 저장
-     */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -49,10 +41,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
-        // Authorization 헤더 존재 + Bearer 형태인지 확인
         if (header != null && header.startsWith("Bearer ")) {
 
-            String token = header.substring(7); // "Bearer " 뒤의 문자열만 추출
+            String token = header.substring(7);
 
             // JWT 토큰 검증 (서명 + 만료시간 확인)
             if (jwtTokenProvider.validateToken(token)) {
@@ -66,23 +57,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
 
                 // username 기반 유저 정보 조회
-                String username = jwtTokenProvider.getUsername(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                if (jwtTokenProvider.validateToken(token)) {
 
-                // 인증 객체 생성 (Spring Security 내부 인증 객체)
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                    // 블랙리스트 확인 → 등록된 토큰이면 인증 거부
+                    if (redisTokenService.isBlacklisted(token)) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setCharacterEncoding("UTF-8");  // 추가
+                        response.getWriter().write("Logged out token.");
+                        return;
+                    }
 
-                // SecurityContext에 저장 → 인증 완료 상태
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    String username = jwtTokenProvider.getUsername(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
-        }
 
-        // 다음 필터 실행
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+        }
     }
 }

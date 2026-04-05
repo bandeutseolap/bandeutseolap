@@ -81,3 +81,9 @@ build/
 # Docker (Optional)
 # ──────────────────────────────
 docker-temp/
+
+# ──────────────────────────────
+# Claude 자동화 (로컬 전용)
+# ──────────────────────────────
+CLAUDE.md
+scripts/..bfg-report/

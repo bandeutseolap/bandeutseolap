@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
  * - 비즈니스 로직은 AuthService에 위임한다.
  */
 
+
+@Slf4j
 @Tag(name = "Auth", description = "인증 관련 API (회원가입, 로그인, 로그아웃, 토큰 재발급)")
 @RestController
 @RequestMapping("/auth")
@@ -51,10 +54,9 @@ public class AuthController {
      */
     @Operation(summary = "로그인", description = "아이디/비밀번호 검증 후 Access Token + Refresh Token 발급")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String ipAddress = httpRequest.getRemoteAddr();
-        return ResponseEntity.ok(authService.login(request,ipAddress));
+        return ResponseEntity.ok(authService.login(request, ipAddress));
     }
 
     /**
@@ -66,7 +68,6 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,
                                          HttpServletRequest httpRequest) {
-
         String ipAddress = httpRequest.getRemoteAddr();
         String accessToken = httpRequest.getHeader("Authorization").substring(7).trim(); // 추가
         authService.logout(userDetails.getUsername(), ipAddress, accessToken); // accessToken 추가
@@ -84,6 +85,11 @@ public class AuthController {
     @PostMapping("/reissue")
     public ResponseEntity<LoginResponse> reissue(@RequestBody ReissueRequest request){
         return ResponseEntity.ok(authService.reissue(request.getRefreshToken()));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok("안녕하세요 " + userDetails.getUsername() + "님!");
     }
 }
 

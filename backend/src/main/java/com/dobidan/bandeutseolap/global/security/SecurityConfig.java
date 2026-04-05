@@ -3,6 +3,7 @@ package com.dobidan.bandeutseolap.global.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -58,7 +59,9 @@ public class SecurityConfig {
      * - JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @Profile("!local")
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
+    {
 
         http
                 //1) CSRF 비활성화 (JWT는 세션을 사용하지 않기 때문)
@@ -80,6 +83,17 @@ public class SecurityConfig {
                 //4) UsernamePasswordAuthenticationFilter 전에 JWT 필터 적용
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        return http.build();
+    }
+
+    @Bean
+    @Profile("local")  // local 프로필일 때만
+    public SecurityFilterChain localFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()  // 로컬에서 전체 허용
+                );
         return http.build();
     }
 
