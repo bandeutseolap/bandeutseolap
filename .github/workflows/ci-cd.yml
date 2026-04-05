@@ -104,6 +104,7 @@ jobs:
           SPRING_DATA_REDIS_PORT=6379
           SPRING_DATA_REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
           KAFKA_BOOTSTRAP_SERVERS=${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
+          SPRING_PROFILES_ACTIVE=prod
           EOF
           ls -al .backend.env docker-compose.yml
 
