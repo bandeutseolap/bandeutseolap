@@ -32,6 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final RedisTokenService redisTokenService;
 
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -50,38 +51,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // 블랙리스트 확인 → 로그아웃된 토큰이면 즉시 차단
                 if (redisTokenService.isBlacklisted(token)) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 반환
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setCharacterEncoding("UTF-8");
                     response.getWriter().write("Logged out token.");
-                    return; // 다음 필터로 넘기지 않고 즉시 종료
+                    return;
                 }
 
-                // username 기반 유저 정보 조회
-                if (jwtTokenProvider.validateToken(token)) {
+                String username = jwtTokenProvider.getUsername(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    // 블랙리스트 확인 → 등록된 토큰이면 인증 거부
-                    if (redisTokenService.isBlacklisted(token)) {
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.setCharacterEncoding("UTF-8");  // 추가
-                        response.getWriter().write("Logged out token.");
-                        return;
-                    }
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-                    String username = jwtTokenProvider.getUsername(token);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
-                                    null,
-                                    userDetails.getAuthorities()
-                            );
-
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
-
-            filterChain.doFilter(request, response);
         }
+
+        // 다음 필터 실행 (if 블록 밖으로!)
+        filterChain.doFilter(request, response);
     }
 }
