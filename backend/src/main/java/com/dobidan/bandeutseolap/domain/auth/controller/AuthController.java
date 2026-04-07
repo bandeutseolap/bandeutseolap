@@ -68,6 +68,11 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,
                                          HttpServletRequest httpRequest) {
+        log.info("로그아웃 요청 시작"); // null 체크 전에 먼저 찍기
+        if (userDetails == null) {
+            log.warn("userDetails가 null입니다!");
+            return ResponseEntity.status(401).body("인증 정보 없음");
+        }
         log.info("로그아웃 요청 - username: {}", userDetails.getUsername());
         String ipAddress = httpRequest.getRemoteAddr();
         String accessToken = httpRequest.getHeader("Authorization").substring(7).trim(); // 추가
