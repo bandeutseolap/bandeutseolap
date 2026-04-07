@@ -2,7 +2,7 @@ version: "3.9"  # Docker-compose 버전
 
 services:
   frontend:
-    image: ghcr.io/yelinz515/bandeutseolap/frontend:latest
+    image: ghcr.io/bandeutseolap/bandeutseolap/frontend:latest
     container_name: bandeutseolap-frontend
     ports:
       - "80:80"
@@ -12,7 +12,7 @@ services:
     networks: [mynet]
 
   backend:
-    image: ghcr.io/yelinz515/bandeutseolap/backend:latest
+    image: ghcr.io/bandeutseolap/bandeutseolap/backend:latest
     container_name: bandeutseolap-backend
     ports:
       - "8080:8080"
