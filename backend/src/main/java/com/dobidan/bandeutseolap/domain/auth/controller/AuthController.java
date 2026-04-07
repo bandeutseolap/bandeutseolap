@@ -68,6 +68,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails,
                                          HttpServletRequest httpRequest) {
+        log.info("로그아웃 요청 - username: {}", userDetails.getUsername());
         String ipAddress = httpRequest.getRemoteAddr();
         String accessToken = httpRequest.getHeader("Authorization").substring(7).trim(); // 추가
         authService.logout(userDetails.getUsername(), ipAddress, accessToken); // accessToken 추가
