@@ -17,7 +17,9 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./.backend.env   # DB 접속정보 등 민감값 분리
+      - ./.backend.env
+    environment:
+          - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
     restart: unless-stopped
     networks: [mynet]
 
