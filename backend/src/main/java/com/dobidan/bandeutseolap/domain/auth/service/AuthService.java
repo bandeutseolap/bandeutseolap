@@ -3,7 +3,9 @@ package com.dobidan.bandeutseolap.domain.auth.service;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.User;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
 import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -39,17 +42,28 @@ public class AuthService {
 
     // 회원가입
     public void signup(SignupRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("이미 존재하는 사용자입니다.");
+
+        // 1. 로그인 아이디 중복체크
+        if(appUserRepository.existsByLgnId(request.getLgnId())){
+            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role("USER")
+        // 2. 이메일 중복체크
+        if (appUserRepository.existsByEmail(request.getEmail())){
+            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+        }
+
+        // 3.AppUser 객체
+        AppUser user = AppUser.builder()
+                .lgnId(request.getLgnId())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .userName(request.getUserName())
+                .email(request.getEmail())
+                .mobilePhone(request.getMobilePhone())
                 .build();
 
-        userRepository.save(user);
+        // 4. DB저장
+        appUserRepository.save(user);
 
     }
 
