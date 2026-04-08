@@ -1,9 +1,10 @@
 package com.dobidan.bandeutseolap.domain.board.controller;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
+import com.dobidan.bandeutseolap.domain.board.service.BoardService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * BoardController
@@ -23,6 +24,20 @@ public class BoardController {
     @GetMapping("/test")
     public String testBoardApi() {
         return "BE : Board API 해보자";
+    }
+
+    private final BoardService boardService;
+
+    // 생성자 주입
+    public BoardController(BoardService boardService) {
+        this.boardService = boardService;
+    }
+
+    // 게시글 작성 API
+    @PostMapping("/create")
+    public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardRequest request) {
+        BoardResponse response = boardService.createBoard(request);
+        return ResponseEntity.ok(response);
     }
 
 }

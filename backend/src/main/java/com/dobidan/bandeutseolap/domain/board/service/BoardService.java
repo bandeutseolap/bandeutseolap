@@ -1,5 +1,8 @@
 package com.dobidan.bandeutseolap.domain.board.service;
 
+import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
+
 /**
  * BoardService
  *
@@ -17,4 +20,5 @@ package com.dobidan.bandeutseolap.domain.board.service;
  * - 게시글 삭제
  */
 public interface BoardService {
+    BoardResponse createBoard(BoardRequest request);
 }
