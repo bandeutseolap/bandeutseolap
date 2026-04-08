@@ -1,9 +1,7 @@
 package com.dobidan.bandeutseolap.global.security;
 
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
-import com.dobidan.bandeutseolap.domain.user.entity.User;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

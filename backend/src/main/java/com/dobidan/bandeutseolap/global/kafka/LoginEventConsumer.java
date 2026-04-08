@@ -1,8 +1,9 @@
 package com.dobidan.bandeutseolap.global.kafka;
 
+import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.UserLog;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.domain.user.repository.UserLogRepository;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 public class LoginEventConsumer {
 
     private final UserLogRepository userLogRepository;
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
 
     /**
      * consumeLoginEvent()
@@ -37,7 +38,7 @@ public class LoginEventConsumer {
         String action = parts[2];
 
         //2.username으로 userId 조회
-        Long userId = userRepository.findByUsername(username)
+        Long userId = appUserRepository.findByLgnId(username)
                 .map(user -> user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
