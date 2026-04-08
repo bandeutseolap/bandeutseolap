@@ -4,9 +4,7 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
-import com.dobidan.bandeutseolap.domain.user.entity.User;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
 import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
@@ -31,7 +29,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
     private final AppUserRepository appUserRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
@@ -73,7 +70,7 @@ public class AuthService {
         // 1. 아이디 / 비밀번호 검증
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        request.getLgnId(),
                         request.getPassword()
                 )
         );
