@@ -1,5 +1,12 @@
 package com.dobidan.bandeutseolap.domain.board.service;
 
+import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
+import com.dobidan.bandeutseolap.domain.board.entity.AppBoard;
+import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
+import com.dobidan.bandeutseolap.domain.board.repository.AppBoardContVerRepository;
+import com.dobidan.bandeutseolap.domain.board.repository.AppBoardRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,4 +23,50 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class BoardServiceImpl implements BoardService {
+    private final AppBoardRepository appBoardRepository;
+    private final AppBoardContVerRepository appBoardContVerRepository;
+
+    public BoardServiceImpl(AppBoardRepository appBoardRepository, AppBoardContVerRepository appBoardContVerRepository) {
+        this.appBoardRepository = appBoardRepository;
+        this.appBoardContVerRepository = appBoardContVerRepository;
+    }
+
+    //게시글 생성
+    @Transactional
+    public BoardResponse createBoard(BoardRequest request) {
+        // 엔티티 생성 시 생성자 사용
+        AppBoard board = AppBoard.builder()
+                .title(request.title())
+                .currentContentVersion(1)
+                .boardAreaCd(request.boardAreaCd())
+                .projectId(null)
+                .visibleYn(request.visibleYn() != null && request.visibleYn())
+                .openTargetCd(request.openTargetCd())
+                .writtenBy(request.writtenBy())
+                .bbsStatusCd("ACTIVE")
+                .fixedTopYn(request.fixedTopYn() !=null && request.fixedTopYn())
+                .noticeYn(request.noticeYn() !=null && request.noticeYn())
+                .updatedBy(request.writtenBy())
+                .build();
+
+
+        AppBoard savedBoard = appBoardRepository.save(board);
+
+        AppBoardContVer contentVer = AppBoardContVer.builder()
+                .appBoard(savedBoard)
+                .version(1)
+                .content(request.content())
+                .recoveredYn(false)
+                .build();
+
+        appBoardContVerRepository.save(contentVer);
+
+        return new BoardResponse(
+                savedBoard.getBoardId(),
+                savedBoard.getTitle(),
+                contentVer.getVersion(),
+                contentVer.getContent()
+        );
+    }
+
 }

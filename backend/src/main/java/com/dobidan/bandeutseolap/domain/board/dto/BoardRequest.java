@@ -12,5 +12,13 @@ package com.dobidan.bandeutseolap.domain.board.dto;
  * - 클라이언트가 게시글 작성 시 전달하는 요청 데이터(title, content)를 매핑
  * - Controller → Service 계층으로 데이터 전달 시 활용
  */
-public record BoardRequest (String title, String content) {
+public record BoardRequest (String title,
+                            String content,
+                            Boolean visibleYn,
+                            Boolean fixedTopYn,
+                            Boolean noticeYn,
+                            Long writtenBy,
+                            String boardAreaCd,
+                            String openTargetCd) {
+
 }
