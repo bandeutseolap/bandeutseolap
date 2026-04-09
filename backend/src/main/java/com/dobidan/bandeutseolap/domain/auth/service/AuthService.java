@@ -149,4 +149,18 @@ public class AuthService {
         return new LoginResponse(newAccessToken, refreshToken);
     }
 
+    // 탈퇴
+    public void withdraw(String username) {
+
+        AppUser appUser = appUserRepository.findByLgnId(username)
+                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다,"));
+
+        // 2. Soft Delete 처리
+        appUser.withdraw();
+        appUserRepository.save(appUser);
+
+        // 3. Redis Refresh Token 삭제
+        redisTokenService.deleteRefreshToken(username);
+    }
+
 }

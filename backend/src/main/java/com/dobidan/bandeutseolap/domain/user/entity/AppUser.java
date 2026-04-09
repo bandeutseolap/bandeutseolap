@@ -76,4 +76,10 @@ public class AppUser {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();  // 직접 넣어줌
+        this.accStatusCd = "WITHDRAWN";
+    }
+
 }
