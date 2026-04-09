@@ -4,6 +4,8 @@ import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUserInfo;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserInfoRepository;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private final AppUserRepository appUserRepository;
+    private final AppUserInfoRepository appUserInfoRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -54,16 +57,22 @@ public class AuthService {
         }
 
         // 3.AppUser 객체
-        AppUser user = AppUser.builder()
+        AppUser savedUser = appUserRepository.save(AppUser.builder()
                 .lgnId(request.getLgnId())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .userName(request.getUserName())
                 .email(request.getEmail())
                 .mobilePhone(request.getMobilePhone())
-                .build();
+                .build());
 
-        // 4. DB저장
-        appUserRepository.save(user);
+        // 4. AppUserInfo 객체
+        appUserInfoRepository.save(AppUserInfo.builder()
+                .appUser(savedUser)
+                .birthDt(request.getBirthDt())
+                .jobCd(request.getJobCd())
+                .countryCd(request.getCountryCd())
+                .imagePath(request.getImagePath())
+                .build());
 
     }
 

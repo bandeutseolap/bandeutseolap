@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 /**
  * 회원가입 요청 DTO
  *
@@ -33,4 +35,15 @@ public class SignupRequest {
 
     @Size(max = 40)
     private String mobilePhone;
+
+    private LocalDate birthDt;
+
+    @Size(max = 30)
+    private String jobCd;
+
+    @Size(max = 10)
+    private String countryCd;
+
+    @Size(max = 255)
+    private String imagePath;
 }
