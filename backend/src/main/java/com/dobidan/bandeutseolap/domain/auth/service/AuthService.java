@@ -9,6 +9,7 @@ import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  * AuthService
@@ -77,14 +80,20 @@ public class AuthService {
 
         String username = authentication.getName();
 
-        // 2. Access Token + Refresh Token 발급
+        // 2. 마지막 로그인 시점 업데이트
+        AppUser appuser = appUserRepository.findByLgnId(username)
+                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        appuser.setLastLgnAt(LocalDateTime.now());
+        appUserRepository.save(appuser);
+
+        // 3. Access Token + Refresh Token 발급
         String accessToken = jwtTokenProvider.createAccessToken(username, authentication.getAuthorities());
         String refreshToken = jwtTokenProvider.createRefreshToken(username);
 
-        // 3. Refresh Token Redis에 저장
+        // 4. Refresh Token Redis에 저장
         redisTokenService.saveRefreshToken(username, refreshToken);
 
-        // 4. kafka 로그인 이벤트 발행
+        // 5. kafka 로그인 이벤트 발행
         loginEventProducer.sendLoginEvent(username,ipAddress,"LOGIN");
 
         return new LoginResponse(accessToken, refreshToken);
