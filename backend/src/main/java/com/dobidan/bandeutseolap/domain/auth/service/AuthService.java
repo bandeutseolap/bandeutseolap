@@ -3,12 +3,15 @@ package com.dobidan.bandeutseolap.domain.auth.service;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
-import com.dobidan.bandeutseolap.domain.user.entity.User;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUserInfo;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserInfoRepository;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  * AuthService
@@ -29,7 +34,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
+    private final AppUserInfoRepository appUserInfoRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -39,17 +45,34 @@ public class AuthService {
 
     // 회원가입
     public void signup(SignupRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("이미 존재하는 사용자입니다.");
+
+        // 1. 로그인 아이디 중복체크
+        if(appUserRepository.existsByLgnId(request.getLgnId())){
+            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role("USER")
-                .build();
+        // 2. 이메일 중복체크
+        if (appUserRepository.existsByEmail(request.getEmail())){
+            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+        }
 
-        userRepository.save(user);
+        // 3.AppUser 객체
+        AppUser savedUser = appUserRepository.save(AppUser.builder()
+                .lgnId(request.getLgnId())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .userName(request.getUserName())
+                .email(request.getEmail())
+                .mobilePhone(request.getMobilePhone())
+                .build());
+
+        // 4. AppUserInfo 객체
+        appUserInfoRepository.save(AppUserInfo.builder()
+                .appUser(savedUser)
+                .birthDt(request.getBirthDt())
+                .jobCd(request.getJobCd())
+                .countryCd(request.getCountryCd())
+                .imagePath(request.getImagePath())
+                .build());
 
     }
 
@@ -59,21 +82,27 @@ public class AuthService {
         // 1. 아이디 / 비밀번호 검증
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        request.getLgnId(),
                         request.getPassword()
                 )
         );
 
         String username = authentication.getName();
 
-        // 2. Access Token + Refresh Token 발급
+        // 2. 마지막 로그인 시점 업데이트
+        AppUser appuser = appUserRepository.findByLgnId(username)
+                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        appuser.setLastLgnAt(LocalDateTime.now());
+        appUserRepository.save(appuser);
+
+        // 3. Access Token + Refresh Token 발급
         String accessToken = jwtTokenProvider.createAccessToken(username, authentication.getAuthorities());
         String refreshToken = jwtTokenProvider.createRefreshToken(username);
 
-        // 3. Refresh Token Redis에 저장
+        // 4. Refresh Token Redis에 저장
         redisTokenService.saveRefreshToken(username, refreshToken);
 
-        // 4. kafka 로그인 이벤트 발행
+        // 5. kafka 로그인 이벤트 발행
         loginEventProducer.sendLoginEvent(username,ipAddress,"LOGIN");
 
         return new LoginResponse(accessToken, refreshToken);
@@ -118,6 +147,20 @@ public class AuthService {
         String newAccessToken = jwtTokenProvider.createAccessToken(username,userDetails.getAuthorities());
 
         return new LoginResponse(newAccessToken, refreshToken);
+    }
+
+    // 탈퇴
+    public void withdraw(String username) {
+
+        AppUser appUser = appUserRepository.findByLgnId(username)
+                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다,"));
+
+        // 2. Soft Delete 처리
+        appUser.withdraw();
+        appUserRepository.save(appUser);
+
+        // 3. Redis Refresh Token 삭제
+        redisTokenService.deleteRefreshToken(username);
     }
 
 }

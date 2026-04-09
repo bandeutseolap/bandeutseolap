@@ -1,7 +1,7 @@
 package com.dobidan.bandeutseolap.global.security;
 
-import com.dobidan.bandeutseolap.domain.user.entity.User;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -29,20 +29,23 @@ public class CustomUserDetailsService implements UserDetailsService {
      * - 찾은 정보를 Spring Security UserDetails 객체로 변환하여 반환
      * - 사용자 없으면 예외 발생 (Spring Security 규칙)
      */
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
 
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException{
+    public UserDetails loadUserByUsername (String username) throws UsernameNotFoundException {
 
-        // DB에서 사용자 조회
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다 : " + username));
+        //DB에서 사용자 조회
+        AppUser user = appUserRepository.findByLgnId(username)
+                .orElseThrow(()-> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-        // UserDetails 형태로 변환하여 반환
-        return withUsername(user.getUsername()) // username
-                .password(user.getPassword())   // 암호화된 비밀번호
-                .roles(user.getRole())          // 권한(Role)
+        //탈퇴한 사용자 체크
+        if(user.getDeletedAt() != null) {
+            throw new UsernameNotFoundException( "탈퇴한 사용자입니다 : " + username );
+        }
+
+        // userDetails 형태로 변환
+        return withUsername(user.getLgnId())
+                .password(user.getPasswordHash())
+                .roles("USER")
                 .build();
-
     }
-
 }
