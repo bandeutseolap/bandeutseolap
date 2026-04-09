@@ -1,12 +1,14 @@
 package com.dobidan.bandeutseolap.domain.board.service;
 
+import com.dobidan.bandeutseolap.domain.board.dto.BoardDetailResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.entity.AppBoard;
 import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardContVerRepository;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardRepository;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,20 +20,20 @@ import org.springframework.stereotype.Service;
  * - 실제 비즈니스 로직 구현 (게시글 작성, 조회, 수정, 삭제 등)
  * - Controller에서 호출되어 Repository와 상호작용하며 데이터 처리
  *
- * 현재는 뼈대만 정의되어 있으며,
- * 추후 BoardRepository를 주입받아 CRUD 기능을 구현할 예정.
+ * - @RequiredArgsConstructor: final로 선언된 필드를 인자로 받는 생성자를 자동 생성
+ *   → 직접 생성자 코드를 작성하지 않아도 의존성 주입(DI)이 가능
+ *   → Spring이 AppBoardRepository, AppBoardContVerRepository를
+ *      자동으로 주입해줌 (생성자 주입 방식)
+ *
  */
 @Service
+@RequiredArgsConstructor
 public class BoardServiceImpl implements BoardService {
     private final AppBoardRepository appBoardRepository;
     private final AppBoardContVerRepository appBoardContVerRepository;
 
-    public BoardServiceImpl(AppBoardRepository appBoardRepository, AppBoardContVerRepository appBoardContVerRepository) {
-        this.appBoardRepository = appBoardRepository;
-        this.appBoardContVerRepository = appBoardContVerRepository;
-    }
-
     //게시글 생성
+    @Override
     @Transactional
     public BoardResponse createBoard(BoardRequest request) {
         // 엔티티 생성 시 생성자 사용
@@ -68,5 +70,40 @@ public class BoardServiceImpl implements BoardService {
                 contentVer.getContent()
         );
     }
+
+    //게시글 상세 조회
+    @Override
+    @Transactional(readOnly = true)
+    public BoardDetailResponse getBoard(Long boardId, Integer version) {
+
+        // 1. 게시글 조회
+        AppBoard board = appBoardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+
+        // 2. 버전 결정 (version 파라미터 없으면 최신 버전)
+        int targetVersion = (version !=null) ? version : board.getCurrentContentVersion();
+
+        // 3. 버전 내용 조회
+        AppBoardContVer contVer = appBoardContVerRepository
+                .findByAppBoard_BoardIdAndVersion(boardId, targetVersion)
+                .orElseThrow(() -> new RuntimeException("해당 버전의 내용을 찾을 수 없습니다."));
+
+        return new BoardDetailResponse(
+                board.getBoardId(),
+                board.getTitle(),
+                board.getBoardAreaCd(),
+                board.getOpenTargetCd(),
+                board.getVisibleYn(),
+                board.getFixedTopYn(),
+                board.getNoticeYn(),
+                board.getCurrentContentVersion(),
+                board.getWrittenBy(),
+                board.getWrittenAt(),
+                board.getUpdatedAt(),
+                board.getBbsStatusCd(),
+                contVer.getContent()
+        );
+    }
+
 
 }

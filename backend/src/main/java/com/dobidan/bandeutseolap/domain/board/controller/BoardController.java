@@ -1,8 +1,10 @@
 package com.dobidan.bandeutseolap.domain.board.controller;
 
+import com.dobidan.bandeutseolap.domain.board.dto.BoardDetailResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.service.BoardService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,12 +22,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/board")
 public class BoardController {
-
-    @GetMapping("/test")
-    public String testBoardApi() {
-        return "BE : Board API 해보자";
-    }
-
     private final BoardService boardService;
 
     // 생성자 주입
@@ -34,10 +30,21 @@ public class BoardController {
     }
 
     // 게시글 작성 API
-    @PostMapping("/create")
+    @Operation(summary = "게시글 작성", description = "version=1")
+    @PostMapping
     public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardRequest request) {
         BoardResponse response = boardService.createBoard(request);
         return ResponseEntity.ok(response);
     }
+
+    // 게시글 상세 조회 API
+    @Operation(summary = "게시글 상세 조회", description = "board_id, version에 따른 게시글 상세 조회")
+    @GetMapping("/{boardId}")
+    public ResponseEntity<BoardDetailResponse> getBoard(@PathVariable Long boardId, @RequestParam(required = false) Integer version){
+        BoardDetailResponse detailResponse = boardService.getBoard(boardId, version);
+        return ResponseEntity.ok(detailResponse);
+    }
+
+
 
 }
