@@ -179,4 +179,23 @@ public class BoardServiceImpl implements BoardService {
      );
 
     }
+
+    // 게시글 삭제
+    @Override
+    @Transactional
+    public void deleteBoard(Long boardId, Long userId) {
+
+        // 1. 게시글 조회
+        AppBoard board = appBoardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+
+        // 2. 본인 글인지 확인
+        if (!board.getWrittenBy().equals(userId)) {
+            throw new RuntimeException("삭제 권한이 없습니다.");
+        }
+
+        // 3. 삭제
+        board.delete();
+        appBoardRepository.save(board);
+    }
 }

@@ -118,4 +118,10 @@ public class AppBoard {
         this.currentContentVersion = this.currentContentVersion + 1;
         this.updatedAt = LocalDateTime.now();
     }
+
+    // delete 로직을 위한 메서드 추가
+    public void delete(){
+        this.bbsStatusCd = "INACTIVE";
+        this.updatedAt   = LocalDateTime.now();
+    }
 }

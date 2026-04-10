@@ -41,4 +41,7 @@ public interface BoardService {
 
     // 게시글 수정
     BoardResponse updateBoard(Long boardId, BoardRequest request);
+
+    // 게시글 삭제
+    void deleteBoard(Long boardId, Long userId);
 }

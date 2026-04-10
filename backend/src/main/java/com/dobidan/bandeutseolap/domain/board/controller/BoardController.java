@@ -13,6 +13,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * BoardController
  *
@@ -75,5 +77,13 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
+    //게시글 삭제 API
+    @Operation(summary = "게시글 삭제", description = "본인 게시글 id 삭제")
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<Map<String, String>> deleteBoard(@PathVariable Long boardId,
+                                                           @RequestParam Long userId){
+        boardService.deleteBoard(boardId, userId);
+        return ResponseEntity.ok(Map.of("message", "게시글이 삭제되었습니다."));
+    }
 
 }
