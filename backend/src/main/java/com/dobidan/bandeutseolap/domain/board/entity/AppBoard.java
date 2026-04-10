@@ -1,5 +1,6 @@
 package com.dobidan.bandeutseolap.domain.board.entity;
 
+import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -104,5 +105,17 @@ public class AppBoard {
         this.updatedBy              = updatedBy;
         this.writtenAt              = LocalDateTime.now();
         this.updatedAt              = LocalDateTime.now();
+    }
+
+    // update 로직을 위한 메서드 추가
+    public void update(BoardRequest request){
+        this.title = request.title();
+        this.openTargetCd = request.openTargetCd();
+        this.visibleYn = request.visibleYn() != null && request.visibleYn();
+        this.fixedTopYn = request.fixedTopYn() != null && request.fixedTopYn();
+        this.noticeYn = request.noticeYn() != null && request.noticeYn();;
+        this.updatedBy = request.writtenBy();
+        this.currentContentVersion = this.currentContentVersion + 1;
+        this.updatedAt = LocalDateTime.now();
     }
 }

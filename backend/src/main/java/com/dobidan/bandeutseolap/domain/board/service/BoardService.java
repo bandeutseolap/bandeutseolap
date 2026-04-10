@@ -38,4 +38,7 @@ public interface BoardService {
             String searchType,
             Pageable pageable
     );
+
+    // 게시글 수정
+    BoardResponse updateBoard(Long boardId, BoardRequest request);
 }

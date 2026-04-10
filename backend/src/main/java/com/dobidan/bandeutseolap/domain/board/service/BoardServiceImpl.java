@@ -143,4 +143,40 @@ public class BoardServiceImpl implements BoardService {
                 board.getBbsStatusCd()
         ));
     }
+
+    // 게시글 수정
+    @Override
+    @Transactional
+    public BoardResponse updateBoard(Long boardId, BoardRequest request){
+     // 1. 게시글 조회
+     AppBoard board  = appBoardRepository.findById(boardId)
+             .orElseThrow(()-> new RuntimeException("게시글을 찾을 수 없습니다."));
+
+     // 2. 작성자 본인 확인
+     if (!board.getWrittenBy().equals(request.writtenBy())){
+         throw new RuntimeException("수정 권한이 없습니다.");
+     }
+
+     // 3. app_board 테이블 업데이트
+     board.update(request);
+     appBoardRepository.save(board);
+
+     // 4. app_board_cont_ver 새 버전 insert
+     int nextVersion = board.getCurrentContentVersion();
+     AppBoardContVer contVer = AppBoardContVer.builder()
+             .appBoard(board)
+             .version(nextVersion)
+             .content(request.content())
+             .recoveredYn(false)
+             .build();
+     appBoardContVerRepository.save(contVer);
+
+     return new BoardResponse(
+             board.getBoardId(),
+             board.getTitle(),
+             contVer.getVersion(),
+             contVer.getContent()
+     );
+
+    }
 }

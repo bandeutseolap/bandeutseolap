@@ -64,6 +64,16 @@ public class BoardController {
         );
     }
 
+    // 게시글 수정 API
+    @Operation(summary = "게시글 수정", description = "작성자 본인의 글 수정")
+    @PutMapping("/{boardId}")
+    public ResponseEntity<BoardResponse> updateBoard(
+            @PathVariable Long boardId,
+            @RequestBody BoardRequest request
+    ){
+        BoardResponse response = boardService.updateBoard(boardId, request);
+        return ResponseEntity.ok(response);
+    }
 
 
 }
