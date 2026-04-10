@@ -4,6 +4,8 @@ import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * AppBoardContVerRepository
  *
@@ -19,4 +21,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AppBoardContVerRepository extends JpaRepository<AppBoardContVer, Long> {
+
+    // board_id + version으로 내용 조회
+    Optional<AppBoardContVer> findByAppBoard_BoardIdAndVersion(Long boardId, Integer version);
+
 }
