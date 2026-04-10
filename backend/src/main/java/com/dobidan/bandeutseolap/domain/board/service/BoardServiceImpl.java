@@ -1,6 +1,7 @@
 package com.dobidan.bandeutseolap.domain.board.service;
 
 import com.dobidan.bandeutseolap.domain.board.dto.BoardDetailResponse;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardListResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.entity.AppBoard;
@@ -8,6 +9,8 @@ import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardContVerRepository;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +35,7 @@ public class BoardServiceImpl implements BoardService {
     private final AppBoardRepository appBoardRepository;
     private final AppBoardContVerRepository appBoardContVerRepository;
 
-    //게시글 생성
+    // 게시글 생성
     @Override
     @Transactional
     public BoardResponse createBoard(BoardRequest request) {
@@ -71,7 +74,7 @@ public class BoardServiceImpl implements BoardService {
         );
     }
 
-    //게시글 상세 조회
+    // 게시글 상세 조회
     @Override
     @Transactional(readOnly = true)
     public BoardDetailResponse getBoard(Long boardId, Integer version) {
@@ -105,5 +108,39 @@ public class BoardServiceImpl implements BoardService {
         );
     }
 
+    // 게시글 목록 조회
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BoardListResponse> getBoardList(Long userId,
+                                                String boardAreaCd,
+                                                String keyword,
+                                                String searchType,
+                                                Pageable pageable){
+        Page<AppBoard> boards;
 
+        if (userId == null) {
+            // 비로그인 사용자
+            boards = appBoardRepository.findPublicBoards(
+                    boardAreaCd, keyword, searchType, pageable);
+        } else {
+            // 로그인 사용자
+            boards = appBoardRepository.findBoardsForLoginUser(
+                    userId, boardAreaCd, keyword, searchType, pageable);
+        }
+
+        return boards.map(board -> new BoardListResponse(
+                board.getBoardId(),
+                board.getTitle(),
+                board.getBoardAreaCd(),
+                board.getOpenTargetCd(),
+                board.getVisibleYn(),
+                board.getFixedTopYn(),
+                board.getNoticeYn(),
+                board.getCurrentContentVersion(),
+                board.getWrittenBy(),
+                board.getWrittenAt(),
+                board.getUpdatedAt(),
+                board.getBbsStatusCd()
+        ));
+    }
 }

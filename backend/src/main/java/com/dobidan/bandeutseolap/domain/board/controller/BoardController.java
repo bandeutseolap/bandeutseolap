@@ -1,10 +1,15 @@
 package com.dobidan.bandeutseolap.domain.board.controller;
 
 import com.dobidan.bandeutseolap.domain.board.dto.BoardDetailResponse;
+import com.dobidan.bandeutseolap.domain.board.dto.BoardListResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +48,20 @@ public class BoardController {
     public ResponseEntity<BoardDetailResponse> getBoard(@PathVariable Long boardId, @RequestParam(required = false) Integer version){
         BoardDetailResponse detailResponse = boardService.getBoard(boardId, version);
         return ResponseEntity.ok(detailResponse);
+    }
+
+    // 게시글 목록 조회 API
+    @Operation(summary = "게시글 목록 조회", description = "게시글 목록 sort는 컬럼명 등 들어가야 함")
+    @GetMapping
+    public ResponseEntity<Page<BoardListResponse>> getBoardList(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String boardAreaCd,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "all") String searchType,
+            @PageableDefault(sort = "writtenAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(
+                boardService.getBoardList(userId, boardAreaCd, keyword, searchType, pageable)
+        );
     }
 
 
