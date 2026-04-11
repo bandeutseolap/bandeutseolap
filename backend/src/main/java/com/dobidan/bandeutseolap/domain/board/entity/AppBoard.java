@@ -108,13 +108,13 @@ public class AppBoard {
     }
 
     // update 로직을 위한 메서드 추가
-    public void update(BoardRequest request){
+    public void update(BoardRequest request, Long userId){
         this.title = request.title();
         this.openTargetCd = request.openTargetCd();
         this.visibleYn = request.visibleYn() != null && request.visibleYn();
         this.fixedTopYn = request.fixedTopYn() != null && request.fixedTopYn();
         this.noticeYn = request.noticeYn() != null && request.noticeYn();;
-        this.updatedBy = request.writtenBy();
+        this.updatedBy = userId;
         this.currentContentVersion = this.currentContentVersion + 1;
         this.updatedAt = LocalDateTime.now();
     }

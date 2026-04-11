@@ -25,7 +25,7 @@ import org.springframework.data.domain.Pageable;
  */
 public interface BoardService {
     // 게시글 작성
-    BoardResponse createBoard(BoardRequest request);
+    BoardResponse createBoard(BoardRequest request, Long userId);
 
     // 게시글 상세 조회
     BoardDetailResponse getBoard(Long boardId, Integer version);
@@ -40,7 +40,7 @@ public interface BoardService {
     );
 
     // 게시글 수정
-    BoardResponse updateBoard(Long boardId, BoardRequest request);
+    BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId);
 
     // 게시글 삭제
     void deleteBoard(Long boardId, Long userId);
