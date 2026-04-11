@@ -8,6 +8,7 @@ import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -35,12 +36,12 @@ public class AuthController {
     /**
      * 회원가입 API - POST /auth/signup
      *
-     * - username 중복 체크
+     * - 아이디 중복 체크
      * - 비밀번호 암호화 후 DB 저장
      */
-    @Operation(summary = "회원가입", description = "username 중복 체크 후 비밀번호 암호화하여 저장")
+    @Operation(summary = "회원가입", description = "아이디 중복 체크 후 비밀번호 암호화하여 저장")
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request) {
         authService.signup(request);
         return ResponseEntity.ok("회원가입 완료");
     }
@@ -93,9 +94,18 @@ public class AuthController {
         return ResponseEntity.ok(authService.reissue(request.getRefreshToken()));
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<String> test(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok("안녕하세요 " + userDetails.getUsername() + "님!");
+    /**
+     * 탈퇴 API - DELETE /auth/withdraw
+     *
+     * - 인증된 사용자의 계정을 Soft Delete로 처리 ( Why ? 이력 관리)
+     * - Redis Refresh Token 삭제
+     */
+    @Operation(summary = "탈퇴", description = "계정 Soft Delete 처리 및 Refresh Token 삭제")
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<String> withdraw(@AuthenticationPrincipal UserDetails userDetails){
+        authService.withdraw(userDetails.getUsername());
+        return ResponseEntity.ok("회원탈퇴 완료되었습니다.");
     }
+
 }
 
