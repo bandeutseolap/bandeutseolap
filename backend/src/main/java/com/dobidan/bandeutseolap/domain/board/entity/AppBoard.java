@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  * - open_target_cd: 공개 대상 코드
  * - written_at    : 작성일시 (자동 설정)
  * - written_by    : 작성자 ID
- * - bbs_status_cd : 게시글 상태 코드
+ * - post_status_cd : 게시글 상태 코드
  * - fixed_top_yn  : 상단 고정 여부
  * - notice_yn     : 알림 여부
  * - noticed_at    : 알림일시 (nullable)
@@ -69,8 +69,8 @@ public class AppBoard {
     @Column(name = "written_by", nullable = false)
     private Long writtenBy;
 
-    @Column(name = "bbs_status_cd", nullable = false, length = 30)
-    private String bbsStatusCd;
+    @Column(name = "post_status_cd", nullable = false, length = 30)
+    private String postStatusCd;
 
     @Column(name = "fixed_top_yn", nullable = false)
     private Boolean fixedTopYn;
@@ -90,7 +90,7 @@ public class AppBoard {
     @Builder
     public AppBoard(String title, Integer currentContentVersion, String boardAreaCd,
                     Long projectId, Boolean visibleYn, String openTargetCd,
-                    Long writtenBy, String bbsStatusCd, Boolean fixedTopYn,
+                    Long writtenBy, String postStatusCd, Boolean fixedTopYn,
                     Boolean noticeYn, Long updatedBy) {
         this.title                  = title;
         this.currentContentVersion  = currentContentVersion;
@@ -99,7 +99,7 @@ public class AppBoard {
         this.visibleYn              = visibleYn;
         this.openTargetCd           = openTargetCd;
         this.writtenBy              = writtenBy;
-        this.bbsStatusCd            = bbsStatusCd;
+        this.postStatusCd = postStatusCd;
         this.fixedTopYn             = fixedTopYn;
         this.noticeYn               = noticeYn;
         this.updatedBy              = updatedBy;
@@ -108,20 +108,20 @@ public class AppBoard {
     }
 
     // update 로직을 위한 메서드 추가
-    public void update(BoardRequest request){
+    public void update(BoardRequest request, Long userId){
         this.title = request.title();
         this.openTargetCd = request.openTargetCd();
         this.visibleYn = request.visibleYn() != null && request.visibleYn();
         this.fixedTopYn = request.fixedTopYn() != null && request.fixedTopYn();
         this.noticeYn = request.noticeYn() != null && request.noticeYn();;
-        this.updatedBy = request.writtenBy();
+        this.updatedBy = userId;
         this.currentContentVersion = this.currentContentVersion + 1;
         this.updatedAt = LocalDateTime.now();
     }
 
     // delete 로직을 위한 메서드 추가
     public void delete(){
-        this.bbsStatusCd = "INACTIVE";
+        this.postStatusCd = "INACTIVE";
         this.updatedAt   = LocalDateTime.now();
     }
 }

@@ -17,7 +17,6 @@ public record BoardRequest (String title,
                             Boolean visibleYn,
                             Boolean fixedTopYn,
                             Boolean noticeYn,
-                            Long writtenBy,
                             String boardAreaCd,
                             String openTargetCd) {
 

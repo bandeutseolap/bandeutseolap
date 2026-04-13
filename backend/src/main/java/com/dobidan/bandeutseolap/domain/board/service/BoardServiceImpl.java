@@ -38,7 +38,7 @@ public class BoardServiceImpl implements BoardService {
     // 게시글 생성
     @Override
     @Transactional
-    public BoardResponse createBoard(BoardRequest request) {
+    public BoardResponse createBoard(BoardRequest request, Long userId) {
         // 엔티티 생성 시 생성자 사용
         AppBoard board = AppBoard.builder()
                 .title(request.title())
@@ -47,11 +47,11 @@ public class BoardServiceImpl implements BoardService {
                 .projectId(null)
                 .visibleYn(request.visibleYn() != null && request.visibleYn())
                 .openTargetCd(request.openTargetCd())
-                .writtenBy(request.writtenBy())
-                .bbsStatusCd("ACTIVE")
+                .writtenBy(userId)
+                .postStatusCd("ACTIVE")
                 .fixedTopYn(request.fixedTopYn() !=null && request.fixedTopYn())
                 .noticeYn(request.noticeYn() !=null && request.noticeYn())
-                .updatedBy(request.writtenBy())
+                .updatedBy(userId)
                 .build();
 
 
@@ -91,6 +91,9 @@ public class BoardServiceImpl implements BoardService {
                 .findByAppBoard_BoardIdAndVersion(boardId, targetVersion)
                 .orElseThrow(() -> new RuntimeException("해당 버전의 내용을 찾을 수 없습니다."));
 
+        System.out.println("version: " + targetVersion);
+        System.out.println("contVer: " + targetVersion);
+
         return new BoardDetailResponse(
                 board.getBoardId(),
                 board.getTitle(),
@@ -103,7 +106,7 @@ public class BoardServiceImpl implements BoardService {
                 board.getWrittenBy(),
                 board.getWrittenAt(),
                 board.getUpdatedAt(),
-                board.getBbsStatusCd(),
+                board.getPostStatusCd(),
                 contVer.getContent()
         );
     }
@@ -140,25 +143,25 @@ public class BoardServiceImpl implements BoardService {
                 board.getWrittenBy(),
                 board.getWrittenAt(),
                 board.getUpdatedAt(),
-                board.getBbsStatusCd()
+                board.getPostStatusCd()
         ));
     }
 
     // 게시글 수정
     @Override
     @Transactional
-    public BoardResponse updateBoard(Long boardId, BoardRequest request){
+    public BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId){
      // 1. 게시글 조회
      AppBoard board  = appBoardRepository.findById(boardId)
              .orElseThrow(()-> new RuntimeException("게시글을 찾을 수 없습니다."));
 
      // 2. 작성자 본인 확인
-     if (!board.getWrittenBy().equals(request.writtenBy())){
+     if (!board.getWrittenBy().equals(userId)){
          throw new RuntimeException("수정 권한이 없습니다.");
      }
 
      // 3. app_board 테이블 업데이트
-     board.update(request);
+     board.update(request, userId);
      appBoardRepository.save(board);
 
      // 4. app_board_cont_ver 새 버전 insert
