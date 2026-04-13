@@ -28,7 +28,7 @@ public interface AppBoardRepository extends JpaRepository<AppBoard, Long> {
     // 비로그인 사용자 목록 조회
     @Query("""
     SELECT b FROM AppBoard b
-    WHERE b.bbsStatusCd <> 'INACTIVE'
+    WHERE b.postStatusCd <> 'INACTIVE'
     AND b.visibleYn = true
     AND b.openTargetCd = 'ALL'
     AND (:boardAreaCd IS NULL OR b.boardAreaCd = :boardAreaCd)
@@ -52,7 +52,7 @@ public interface AppBoardRepository extends JpaRepository<AppBoard, Long> {
     // 로그인 사용자 목록 조회
     @Query("""
     SELECT b FROM AppBoard b
-    WHERE b.bbsStatusCd <> 'INACTIVE'
+    WHERE b.postStatusCd <> 'INACTIVE'
     AND (
         b.visibleYn = true
         OR b.writtenBy = :userId

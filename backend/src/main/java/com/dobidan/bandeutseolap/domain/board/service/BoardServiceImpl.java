@@ -48,7 +48,7 @@ public class BoardServiceImpl implements BoardService {
                 .visibleYn(request.visibleYn() != null && request.visibleYn())
                 .openTargetCd(request.openTargetCd())
                 .writtenBy(userId)
-                .bbsStatusCd("ACTIVE")
+                .postStatusCd("ACTIVE")
                 .fixedTopYn(request.fixedTopYn() !=null && request.fixedTopYn())
                 .noticeYn(request.noticeYn() !=null && request.noticeYn())
                 .updatedBy(userId)
@@ -91,6 +91,9 @@ public class BoardServiceImpl implements BoardService {
                 .findByAppBoard_BoardIdAndVersion(boardId, targetVersion)
                 .orElseThrow(() -> new RuntimeException("해당 버전의 내용을 찾을 수 없습니다."));
 
+        System.out.println("version: " + targetVersion);
+        System.out.println("contVer: " + targetVersion);
+
         return new BoardDetailResponse(
                 board.getBoardId(),
                 board.getTitle(),
@@ -103,7 +106,7 @@ public class BoardServiceImpl implements BoardService {
                 board.getWrittenBy(),
                 board.getWrittenAt(),
                 board.getUpdatedAt(),
-                board.getBbsStatusCd(),
+                board.getPostStatusCd(),
                 contVer.getContent()
         );
     }
@@ -140,7 +143,7 @@ public class BoardServiceImpl implements BoardService {
                 board.getWrittenBy(),
                 board.getWrittenAt(),
                 board.getUpdatedAt(),
-                board.getBbsStatusCd()
+                board.getPostStatusCd()
         ));
     }
 

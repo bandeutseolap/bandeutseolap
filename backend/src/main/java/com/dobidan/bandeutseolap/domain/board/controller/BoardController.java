@@ -5,7 +5,7 @@ import com.dobidan.bandeutseolap.domain.board.dto.BoardListResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.service.BoardService;
-import com.dobidan.bandeutseolap.domain.user.repository.UserRepository;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,7 +36,7 @@ import java.util.Map;
 @RequestMapping("/board")
 public class BoardController {
     private final BoardService boardService;
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
 
     // 게시글 작성 API
     @Operation(summary = "게시글 작성", description = "version=1")
@@ -97,7 +97,7 @@ public class BoardController {
 
     // username → userId 추출 공통 메서드
     private Long getUserId(UserDetails userDetails) {
-        return userRepository.findByUsername(userDetails.getUsername())
+        return appUserRepository.findByLgnId(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
                 .getId();
     }
