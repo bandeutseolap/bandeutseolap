@@ -47,7 +47,7 @@ public class AuthService {
     public void signup(SignupRequest request) {
 
         // 1. 로그인 아이디 중복체크
-        if(appUserRepository.existsByLgnId(request.getLgnId())){
+        if(appUserRepository.existsByLoginId(request.getLoginId())){
             throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
 
@@ -58,7 +58,7 @@ public class AuthService {
 
         // 3.AppUser 객체
         AppUser savedUser = appUserRepository.save(AppUser.builder()
-                .lgnId(request.getLgnId())
+                .loginId(request.getLoginId())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .userName(request.getUserName())
                 .email(request.getEmail())
@@ -82,7 +82,7 @@ public class AuthService {
         // 1. 아이디 / 비밀번호 검증
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getLgnId(),
+                        request.getLoginId(),
                         request.getPassword()
                 )
         );
@@ -90,7 +90,7 @@ public class AuthService {
         String username = authentication.getName();
 
         // 2. 마지막 로그인 시점 업데이트
-        AppUser appuser = appUserRepository.findByLgnId(username)
+        AppUser appuser = appUserRepository.findByLoginId(username)
                 .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다."));
         appuser.setLastLgnAt(LocalDateTime.now());
         appUserRepository.save(appuser);
@@ -152,7 +152,7 @@ public class AuthService {
     // 탈퇴
     public void withdraw(String username) {
 
-        AppUser appUser = appUserRepository.findByLgnId(username)
+        AppUser appUser = appUserRepository.findByLoginId(username)
                 .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 유저입니다,"));
 
         // 2. Soft Delete 처리
