@@ -16,7 +16,7 @@ import lombok.Setter;
 public class LoginRequest {
 
     @NotBlank
-    private String lgnId; // 로그인 아이디
+    private String loginId; // 로그인 아이디
     @NotBlank
     private String password; // 비밀번호
 
