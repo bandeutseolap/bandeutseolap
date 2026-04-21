@@ -19,7 +19,7 @@ public class SignupRequest {
 
     @NotBlank
     @Size(max = 50)
-    private String lgnId;
+    private String loginId;
 
     @NotBlank
     @Size(min = 8,max = 50)

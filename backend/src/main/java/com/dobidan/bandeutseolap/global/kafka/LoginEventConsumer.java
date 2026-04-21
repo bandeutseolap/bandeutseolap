@@ -38,7 +38,7 @@ public class LoginEventConsumer {
         String action = parts[2];
 
         //2.username으로 userId 조회
-        Long userId = appUserRepository.findByLgnId(username)
+        Long userId = appUserRepository.findByLoginId(username)
                 .map(user -> user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 

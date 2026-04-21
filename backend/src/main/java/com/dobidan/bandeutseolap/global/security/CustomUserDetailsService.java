@@ -34,7 +34,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername (String username) throws UsernameNotFoundException {
 
         //DB에서 사용자 조회
-        AppUser user = appUserRepository.findByLgnId(username)
+        AppUser user = appUserRepository.findByLoginId(username)
                 .orElseThrow(()-> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         //탈퇴한 사용자 체크
@@ -43,7 +43,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         // userDetails 형태로 변환
-        return withUsername(user.getLgnId())
+        return withUsername(user.getLoginId())
                 .password(user.getPasswordHash())
                 .roles("USER")
                 .build();

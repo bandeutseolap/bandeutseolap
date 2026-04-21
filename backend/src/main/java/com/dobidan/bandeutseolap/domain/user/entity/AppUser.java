@@ -22,8 +22,8 @@ public class AppUser {
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "lgn_id", nullable = false, length = 50)
-    private String lgnId;
+    @Column(name = "login_id", nullable = false, length = 50)
+    private String loginId;
 
     @Size(max = 255)
     @NotNull
