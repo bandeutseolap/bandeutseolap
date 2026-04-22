@@ -8,11 +8,15 @@ import com.dobidan.bandeutseolap.domain.board.entity.AppBoard;
 import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardContVerRepository;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardRepository;
+import com.dobidan.bandeutseolap.domain.file.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * BoardServiceImpl
@@ -34,11 +38,12 @@ import org.springframework.stereotype.Service;
 public class BoardServiceImpl implements BoardService {
     private final AppBoardRepository appBoardRepository;
     private final AppBoardContVerRepository appBoardContVerRepository;
+    private final FileService fileService;
 
     // 게시글 생성
     @Override
     @Transactional
-    public BoardResponse createBoard(BoardRequest request, Long userId) {
+    public BoardResponse createBoard(BoardRequest request, Long userId, List<MultipartFile> files) {
         // 엔티티 생성 시 생성자 사용
         AppBoard board = AppBoard.builder()
                 .title(request.title())
@@ -61,10 +66,15 @@ public class BoardServiceImpl implements BoardService {
                 .appBoard(savedBoard)
                 .version(1)
                 .content(request.content())
-                .recoveredYn(false)
+                .writtenBy(userId)
                 .build();
 
         appBoardContVerRepository.save(contentVer);
+
+        // 파일 업로드
+        if (files != null && !files.isEmpty()) {
+            fileService.uploadFiles(files, savedBoard.getBoardId(), userId);
+        }
 
         return new BoardResponse(
                 savedBoard.getBoardId(),
@@ -167,11 +177,11 @@ public class BoardServiceImpl implements BoardService {
      // 4. app_board_cont_ver 새 버전 insert
      int nextVersion = board.getCurrentContentVersion();
      AppBoardContVer contVer = AppBoardContVer.builder()
-             .appBoard(board)
-             .version(nextVersion)
-             .content(request.content())
-             .recoveredYn(false)
-             .build();
+            .appBoard(board)
+            .version(nextVersion)
+            .content(request.content())
+            .writtenBy(userId)
+            .build();
      appBoardContVerRepository.save(contVer);
 
      return new BoardResponse(

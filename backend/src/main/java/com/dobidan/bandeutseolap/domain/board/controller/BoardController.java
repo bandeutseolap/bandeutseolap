@@ -5,6 +5,7 @@ import com.dobidan.bandeutseolap.domain.board.dto.BoardListResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.service.BoardService;
+import com.dobidan.bandeutseolap.domain.file.service.FileService;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -13,11 +14,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,14 +41,16 @@ import java.util.Map;
 public class BoardController {
     private final BoardService boardService;
     private final AppUserRepository appUserRepository;
+    private final FileService fileService;
 
     // 게시글 작성 API
     @Operation(summary = "게시글 작성", description = "version=1")
-    @PostMapping
-    public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardRequest request,
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BoardResponse> createBoard(@RequestPart BoardRequest request,
+                                                     @RequestPart(required = false) List<MultipartFile> files,
                                                      @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserId(userDetails);
-        BoardResponse response = boardService.createBoard(request, userId);
+        BoardResponse response = boardService.createBoard(request, userId, files);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -97,7 +103,7 @@ public class BoardController {
 
     // username → userId 추출 공통 메서드
     private Long getUserId(UserDetails userDetails) {
-        return appUserRepository.findByLgnId(userDetails.getUsername())
+        return appUserRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
                 .getId();
     }
