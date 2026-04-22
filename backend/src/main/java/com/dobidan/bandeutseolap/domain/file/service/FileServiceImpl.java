@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public List<FileUploadResponse> uploadFile(List<MultipartFile> files, Long boardId, Long userId) {
+    public List<FileUploadResponse> uploadFiles(List<MultipartFile> files, Long boardId, Long userId) {
 
         List<FileUploadResponse> responses = new ArrayList<>();
 

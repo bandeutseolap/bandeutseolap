@@ -13,5 +13,5 @@ import java.util.List;
 
 public interface FileService {
     // 파일 업로드
-    List<FileUploadResponse> uploadFile(List<MultipartFile> files, Long boardId, Long userId);
+    List<FileUploadResponse> uploadFiles(List<MultipartFile> files, Long boardId, Long userId);
 }
