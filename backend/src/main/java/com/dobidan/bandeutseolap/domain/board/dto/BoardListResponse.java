@@ -23,5 +23,5 @@ public record BoardListResponse(Long boardId,
                                 Long writtenBy,
                                 LocalDateTime writtenAt,
                                 LocalDateTime updateAt,
-                                String bbsStatusCd) {
+                                String postStatusCd) {
 }
