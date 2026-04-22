@@ -3,6 +3,8 @@ package com.dobidan.bandeutseolap.domain.board.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
  * AppBoardContVer
  *
@@ -18,10 +20,11 @@ import lombok.*;
  * - board_id    : 게시글 식별자 (FK → app_board.board_id)
  *   - @ManyToOne: AppBoard와 다대일 관계
  *   - FetchType.LAZY: 실제 사용 시점에 DB 조회 (성능 최적화)
- * - version     : 내용 버전 번호 (board_id + version 조합 유니크)
+ * - version     : 내용 버전 번호
  * - content     : 게시글 본문 (MEDIUMTEXT)
- * - file_list   : 첨부파일 목록 (TEXT, nullable)
- * - recovered_yn: 복원 여부
+ * - recovered_version : 복원 기준 버전
+ * - written_by : 작성 사용자 ID
+ * - written_at : 작성 일시
  */
 
 @Entity
@@ -45,19 +48,27 @@ public class AppBoardContVer {
     @Column(name = "content", nullable = false, columnDefinition = "MEDIUMTEXT")
     private String content;
 
-    @Column(name = "file_list", columnDefinition = "TEXT")
-    private String fileList;
+    @Column(name = "recovered_version", nullable = false)
+    private Integer recoveredVersion;
 
-    @Column(name = "recovered_yn", nullable = false)
-    private Boolean recoveredYn;
+    @Column(name = "written_by", nullable = false)
+    private Long writtenBy;
+
+    @Column(name = "written_at", nullable = false, updatable = false)
+    private LocalDateTime writtenAt;
 
     @Builder
     public AppBoardContVer(AppBoard appBoard, Integer version, String content,
-                           String fileList, Boolean recoveredYn) {
-        this.appBoard    = appBoard;
-        this.version     = version;
-        this.content     = content;
-        this.fileList    = fileList;
-        this.recoveredYn = recoveredYn;
+                           Integer recoveredVersion, Long writtenBy) {
+        this.appBoard         = appBoard;
+        this.version          = version;
+        this.content          = content;
+        this.recoveredVersion = recoveredVersion;
+        this.writtenBy        = writtenBy;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.writtenAt = LocalDateTime.now();
     }
 }
