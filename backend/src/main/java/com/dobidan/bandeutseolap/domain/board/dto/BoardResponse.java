@@ -11,5 +11,8 @@ package com.dobidan.bandeutseolap.domain.board.dto;
  * record를 사용하여 불변 객체로 정의되며,
  * Controller → 클라이언트로 응답 데이터를 전달할 때 사용.
  */
-public record BoardResponse (Long id, String title, String content) {
+public record BoardResponse ( Long boardId,
+                              String title,
+                              Integer version,
+                              String content) {
 }

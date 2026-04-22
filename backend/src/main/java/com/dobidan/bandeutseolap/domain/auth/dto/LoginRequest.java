@@ -1,7 +1,9 @@
 package com.dobidan.bandeutseolap.domain.auth.dto;
 
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -12,6 +14,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LoginRequest {
-    private String username;
-    private String password;
+
+    @NotBlank
+    private String loginId; // 로그인 아이디
+    @NotBlank
+    private String password; // 비밀번호
+
 }
