@@ -26,6 +26,6 @@ public record BoardDetailResponse(Long boardId,
                                   Long writtenBy,
                                   LocalDateTime writtenAt,
                                   LocalDateTime updateAt,
-                                  String bbsStatusCd,
+                                  String postStatusCd,
                                   String content) {
 }
