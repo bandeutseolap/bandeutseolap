@@ -100,7 +100,7 @@ public class AuthService {
         String refreshToken = jwtTokenProvider.createRefreshToken(username);
 
         // 4. Refresh Token Redis에 저장
-        redisTokenService.saveRefreshToken(username, refreshToken);
+        redisTokenService.saveRefreshToken(username, refreshToken, appuser.getId(), ipAddress);
 
         // 5. kafka 로그인 이벤트 발행
         loginEventProducer.sendLoginEvent(username,ipAddress,"LOGIN");
