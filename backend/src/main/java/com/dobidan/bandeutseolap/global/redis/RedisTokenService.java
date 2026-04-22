@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class RedisTokenService {
     private long accessExpiration;
 
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
     // Refresh Token 저장 (Hash 방식)
     public void saveRefreshToken(String username, String refreshToken, Long userId, String ipAddress) {
