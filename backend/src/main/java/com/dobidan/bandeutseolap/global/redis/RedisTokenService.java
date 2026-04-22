@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,26 +32,50 @@ public class RedisTokenService {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
-    //Refresh Token 저장 ()
-    public void saveRefreshToken(String username, String refreshToken) {
-        redisTemplate.opsForValue().set(
-                "RT:" + username,
-                refreshToken,
-                refreshExpiration,
-                TimeUnit.MILLISECONDS
-        );
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    LocalDateTime now = LocalDateTime.now();
+
+    // Refresh Token 저장 (Hash 방식)
+    public void saveRefreshToken(String username, String refreshToken, Long userId, String ipAddress) {
+        String key = "RT:" + username;
+
+        Map<String, String> tokenData = new HashMap<>();
+        tokenData.put("refreshToken", refreshToken);
+        tokenData.put("userId", String.valueOf(userId));
+        tokenData.put("issuedAt", now.format(formatter));
+        tokenData.put("expiredAt", now.plus(Duration.ofMillis(refreshExpiration)).format(formatter));
+        tokenData.put("lastAccessAt", now.format(formatter));
+        tokenData.put("ipAddress", ipAddress);
+        tokenData.put("status", "ACTIVE");
+
+        redisTemplate.opsForHash().putAll(key, tokenData);
+        redisTemplate.expire(key, refreshExpiration, TimeUnit.MILLISECONDS);
     }
 
-    //Refresh Token 조회
-    public String getRefreshToken (String username) {
-        return redisTemplate.opsForValue().get("RT:" + username);
+    // Refresh Token 조회
+    public String getRefreshToken(String username) {
+        Object value = redisTemplate.opsForHash().get("RT:" + username, "refreshToken");
+        return value != null ? value.toString() : null;
     }
 
-    //Refresh Token 삭제
-    public void deleteRefreshToken (String username) {
+    // Refresh Token 삭제
+    public void deleteRefreshToken(String username) {
         redisTemplate.delete("RT:" + username);
     }
 
+    // 마지막 접근 시간 업데이트
+    public void updateLastAccessAt(String username) {
+        redisTemplate.opsForHash().put(
+                "RT:" + username,
+                "lastAccessAt",
+                LocalDateTime.now().toString()
+        );
+    }
+
+    // 블랙리스트 등록
     public void addBlacklist(String accessToken, long expiration) {
         redisTemplate.opsForValue().set(
                 "BL:" + accessToken,
@@ -56,17 +85,14 @@ public class RedisTokenService {
         );
     }
 
-    @Value("${jwt.access-expiration}")
-    private long accessExpiration;
-
     public void blacklistAccessToken(String accessToken) {
         addBlacklist(accessToken, accessExpiration);
     }
 
-    public boolean isBlacklisted(String accessToken){
+    // 블랙리스트 확인
+    public boolean isBlacklisted(String accessToken) {
         boolean result = Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
         log.info("블랙리스트 확인 - token: {}, result: {}", accessToken, result);
         return result;
     }
-
 }
