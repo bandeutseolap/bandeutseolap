@@ -61,7 +61,7 @@ public class BoardServiceImpl implements BoardService {
                 .appBoard(savedBoard)
                 .version(1)
                 .content(request.content())
-                .recoveredYn(false)
+                .writtenBy(userId)
                 .build();
 
         appBoardContVerRepository.save(contentVer);
@@ -170,7 +170,7 @@ public class BoardServiceImpl implements BoardService {
              .appBoard(board)
              .version(nextVersion)
              .content(request.content())
-             .recoveredYn(false)
+             .writtenBy(userId)
              .build();
      appBoardContVerRepository.save(contVer);
 
