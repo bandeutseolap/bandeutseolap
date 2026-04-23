@@ -1,5 +1,5 @@
 <script>
-import { fetchBoardDetail } from '../services/boardService'
+import { fetchBoardDetail } from '@/services/boardService'
 
 export default {
   name: 'BoardDetailView',

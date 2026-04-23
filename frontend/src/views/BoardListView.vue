@@ -19,25 +19,13 @@ export default {
       try {
         const response = await fetchBoardList()
 
-        this.boardItems = response.data || []
-        this.totalCount = response.totalCount || 0
+        this.boardItems = response.content || []
+        this.totalCount = response.numberOfElements || 0
       } catch (err) {
         this.error = err.message || '목록을 불러오지 못했습니다.'
       } finally {
         this.loading = false
       }
-    },
-    getStatusClass(status) {
-      const statusMap = {
-        공지: 'chip chip-common',
-        진행: 'chip chip-info',
-        검토중: 'chip chip-warn',
-        완료: 'chip chip-success',
-        보류: 'chip chip-error',
-        등록: 'chip chip-common',
-      }
-
-      return statusMap[status] || 'chip chip-info'
     },
   },
   created() {
@@ -79,10 +67,9 @@ export default {
         <table v-else class="table-basic board-table">
           <colgroup>
             <col style="width: 10%" />
-            <col style="width: 44%" />
-            <col style="width: 16%" />
+            <col style="width: 50%" />
+            <col style="width: 22%" />
             <col style="width: 18%" />
-            <col style="width: 12%" />
           </colgroup>
           <thead>
           <tr>
@@ -90,27 +77,21 @@ export default {
             <th>제목</th>
             <th>생성일시</th>
             <th>작성자</th>
-            <th>상태</th>
           </tr>
           </thead>
           <tbody>
-          <tr v-for="item in boardItems" :key="item.id">
-            <td>{{ item.id }}</td>
+          <tr v-for="item in boardItems" :key="item.boardId">
+            <td>{{ item.boardId }}</td>
             <td>
               <router-link
-                  :to="`/boards/${item.id}`"
+                  :to="`/boards/${item.boardId}`"
                   class="board-title-link"
               >
                 {{ item.title }}
               </router-link>
             </td>
-            <td>{{ item.createdAt }}</td>
-            <td>{{ item.author }}</td>
-            <td>
-                <span :class="getStatusClass(item.status)">
-                  {{ item.status }}
-                </span>
-            </td>
+            <td>{{ item.writtenAt }}</td>
+            <td>{{ item.writtenBy }}</td>
           </tr>
 
           <tr v-if="!boardItems.length">

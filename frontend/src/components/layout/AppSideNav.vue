@@ -10,9 +10,9 @@
         <nav class="sidebar-nav">
           <router-link to="/" class="sidebar-link">Dashboard</router-link>
           <router-link to="/boards" class="sidebar-link">Board</router-link>
-          <router-link to="/" class="sidebar-link">메뉴</router-link>
-          <router-link to="/" class="sidebar-link">메뉴</router-link>
-          <router-link to="/" class="sidebar-link">메뉴</router-link>
+          <router-link to="/1" class="sidebar-link">메뉴</router-link>
+          <router-link to="/2" class="sidebar-link">메뉴</router-link>
+          <router-link to="/3" class="sidebar-link">메뉴</router-link>
         </nav>
       </div>
     </div>

@@ -1,6 +1,6 @@
-import DefaultLayout from '../../layouts/DefaultLayout.vue'
-import BoardListView from '../../views/BoardListView.vue'
-import BoardDetailView from '../../views/BoardDetailView.vue'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import BoardListView from '@/views/BoardListView.vue'
+import BoardDetailView from '@/views/BoardDetailView.vue'
 
 export default [
     {
