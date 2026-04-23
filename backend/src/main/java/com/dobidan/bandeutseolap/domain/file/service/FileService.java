@@ -1,5 +1,6 @@
 package com.dobidan.bandeutseolap.domain.file.service;
 
+import com.dobidan.bandeutseolap.domain.file.dto.FileDownloadResponse;
 import com.dobidan.bandeutseolap.domain.file.dto.FileUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,4 +15,10 @@ import java.util.List;
 public interface FileService {
     // 파일 업로드
     List<FileUploadResponse> uploadFiles(List<MultipartFile> files, Long boardId, Long userId);
+
+    // 파일 다운로드
+    FileDownloadResponse downloadFile(Long boardId, Long fileId);
+
+    // 파일 삭제
+    void deleteFile(Long boardId, Long fileId);
 }

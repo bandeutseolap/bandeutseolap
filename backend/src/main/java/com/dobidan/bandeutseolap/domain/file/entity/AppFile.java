@@ -104,5 +104,10 @@ public class AppFile {
     public void fileActivate() {
         this.fileStatusCd = "ACTIVE";
     }
+
+    public void delete(){
+        this.fileStatusCd = "DELETED";
+        this.deleteScheduledAt = LocalDateTime.now().plusDays(90);
+    }
 }
 

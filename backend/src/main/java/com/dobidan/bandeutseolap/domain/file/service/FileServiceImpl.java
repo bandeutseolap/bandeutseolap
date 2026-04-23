@@ -1,12 +1,13 @@
 package com.dobidan.bandeutseolap.domain.file.service;
 
-
+import com.dobidan.bandeutseolap.domain.file.dto.FileDownloadResponse;
 import com.dobidan.bandeutseolap.domain.file.dto.FileUploadResponse;
 import com.dobidan.bandeutseolap.domain.file.entity.AppFile;
 import com.dobidan.bandeutseolap.domain.file.entity.RelBoardFile;
 import com.dobidan.bandeutseolap.domain.file.repository.AppFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelBoardFileRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.util.UUID;
  * - 물리 삭제: 스케줄러가 delete_scheduled_at 기준으로 별도 처리
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
@@ -114,6 +116,52 @@ public class FileServiceImpl implements FileService {
         }
 
         return responses;
+    }
+
+    // 파일 다운로드
+    @Override
+    @Transactional(readOnly = true)
+    public FileDownloadResponse downloadFile(Long boardId, Long fileId){
+
+        // 1. rel_board_file 데이터 확인
+        relBoardFileRepository.findByBoardIdAndFileId(boardId, fileId)
+                .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+
+        // 2. app_file 데이터 확인
+        AppFile appFile = appFileRepository.findById(fileId)
+                .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+
+        // 3. 논리 삭제된 파일 여부 체크
+        if ("DELETED".equals(appFile.getFileStatusCd())) {
+            throw new RuntimeException("삭제된 파일입니다.");
+        }
+
+        // 4. 물리 파일 읽기
+        try{
+            Path path = Paths.get(appFile.getStorageKey());
+            byte[] data = Files.readAllBytes(path);
+            return new FileDownloadResponse(data, appFile.getOriginFileName(), appFile.getMimeType());
+        } catch (IOException e) {
+            throw new RuntimeException("파일 다운로드 실패");
+        }
+    }
+
+    //파일 삭제
+    @Override
+    @Transactional
+    public void deleteFile(Long boardId, Long fileId) {
+
+        // 1. rel_board_file 확인
+        relBoardFileRepository.findByBoardIdAndFileId(boardId, fileId)
+                .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+
+        // 2. app_file 조회
+        AppFile appFile = appFileRepository.findById(fileId)
+                .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+
+        // 3. 논리 삭제
+        appFile.delete();
+        appFileRepository.save(appFile);
     }
 
     // 파일 확장자 추출
