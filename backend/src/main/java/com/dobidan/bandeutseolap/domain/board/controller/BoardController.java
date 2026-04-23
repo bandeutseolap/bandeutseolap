@@ -80,14 +80,15 @@ public class BoardController {
 
     // 게시글 수정 API
     @Operation(summary = "게시글 수정", description = "작성자 본인의 글 수정")
-    @PutMapping("/{boardId}")
+    @PutMapping(value = "/{boardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BoardResponse> updateBoard(
             @PathVariable Long boardId,
-            @RequestBody BoardRequest request,
+            @RequestPart("request") BoardRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
             @AuthenticationPrincipal UserDetails userDetails
     ){
         Long userId = getUserId(userDetails);
-        BoardResponse response = boardService.updateBoard(boardId, request, userId);
+        BoardResponse response = boardService.updateBoard(boardId, request, userId, files);
         return ResponseEntity.ok(response);
     }
 
