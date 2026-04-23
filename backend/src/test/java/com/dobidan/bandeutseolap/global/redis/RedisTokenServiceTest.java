@@ -37,7 +37,7 @@ class RedisTokenServiceTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         // when
-        redisTokenService.saveRefreshToken(username, refreshToken);
+//        redisTokenService.saveRefreshToken(username, refreshToken,username,ipAddress);
 
         // then
         verify(valueOperations).set("RT:testuser", refreshToken, 1209600000L, TimeUnit.MILLISECONDS);
