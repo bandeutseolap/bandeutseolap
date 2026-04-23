@@ -5,7 +5,6 @@ import com.dobidan.bandeutseolap.domain.board.dto.BoardListResponse;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import com.dobidan.bandeutseolap.domain.board.service.BoardService;
-import com.dobidan.bandeutseolap.domain.file.service.FileService;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,6 @@ import java.util.Map;
 public class BoardController {
     private final BoardService boardService;
     private final AppUserRepository appUserRepository;
-    private final FileService fileService;
 
     // 게시글 작성 API
     @Operation(summary = "게시글 작성", description = "version=1")
