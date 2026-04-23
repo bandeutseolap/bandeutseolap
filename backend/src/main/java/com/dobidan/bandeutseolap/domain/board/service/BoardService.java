@@ -6,6 +6,9 @@ import com.dobidan.bandeutseolap.domain.board.dto.BoardRequest;
 import com.dobidan.bandeutseolap.domain.board.dto.BoardResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * BoardService
@@ -25,7 +28,7 @@ import org.springframework.data.domain.Pageable;
  */
 public interface BoardService {
     // 게시글 작성
-    BoardResponse createBoard(BoardRequest request, Long userId);
+    BoardResponse createBoard(BoardRequest request, Long userId, List<MultipartFile> files);
 
     // 게시글 상세 조회
     BoardDetailResponse getBoard(Long boardId, Integer version);
@@ -40,7 +43,7 @@ public interface BoardService {
     );
 
     // 게시글 수정
-    BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId);
+    BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId, List<MultipartFile> files);
 
     // 게시글 삭제
     void deleteBoard(Long boardId, Long userId);

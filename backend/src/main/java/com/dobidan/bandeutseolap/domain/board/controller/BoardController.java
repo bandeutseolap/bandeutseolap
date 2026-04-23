@@ -13,11 +13,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,11 +43,12 @@ public class BoardController {
 
     // 게시글 작성 API
     @Operation(summary = "게시글 작성", description = "version=1")
-    @PostMapping
-    public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardRequest request,
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BoardResponse> createBoard(@RequestPart BoardRequest request,
+                                                     @RequestPart(required = false) List<MultipartFile> files,
                                                      @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserId(userDetails);
-        BoardResponse response = boardService.createBoard(request, userId);
+        BoardResponse response = boardService.createBoard(request, userId, files);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -74,14 +78,15 @@ public class BoardController {
 
     // 게시글 수정 API
     @Operation(summary = "게시글 수정", description = "작성자 본인의 글 수정")
-    @PutMapping("/{boardId}")
+    @PutMapping(value = "/{boardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BoardResponse> updateBoard(
             @PathVariable Long boardId,
-            @RequestBody BoardRequest request,
+            @RequestPart("request") BoardRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
             @AuthenticationPrincipal UserDetails userDetails
     ){
         Long userId = getUserId(userDetails);
-        BoardResponse response = boardService.updateBoard(boardId, request, userId);
+        BoardResponse response = boardService.updateBoard(boardId, request, userId, files);
         return ResponseEntity.ok(response);
     }
 

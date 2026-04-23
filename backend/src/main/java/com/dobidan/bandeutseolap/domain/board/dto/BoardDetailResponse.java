@@ -1,6 +1,9 @@
 package com.dobidan.bandeutseolap.domain.board.dto;
 
+import com.dobidan.bandeutseolap.domain.file.dto.FileInfoResponse;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * BoardRequest
@@ -27,5 +30,6 @@ public record BoardDetailResponse(Long boardId,
                                   LocalDateTime writtenAt,
                                   LocalDateTime updateAt,
                                   String postStatusCd,
-                                  String content) {
+                                  String content,
+                                  List<FileInfoResponse> files) {
 }
