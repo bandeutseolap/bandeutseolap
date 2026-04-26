@@ -4,12 +4,15 @@ import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.UserLog;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.domain.user.repository.UserLogRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -18,41 +21,45 @@ public class LoginEventConsumer {
 
     private final UserLogRepository userLogRepository;
     private final AppUserRepository appUserRepository;
+    private final ObjectMapper objectMapper;
 
-    /**
-     * consumeLoginEvent()
-     *
-     * - "login-event" 토픽에서 메시지 수신
-     * - 메시지 형식 : "username,ipAddress,action"
-     * - 파싱 후 UserLog DB 저장
-     */
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @KafkaListener(topics = "auth.login.event",groupId= "band-bandeutseolap-auth")
-    public void consumeLoginEvent (String message){
-        log.info("kaka 이벤트 수신 - message : {}",message);
+    @KafkaListener(topics = "auth.login.event", groupId = "band-bandeutseolap-auth")
+    public void consumeLoginEvent(String message) {
+        log.info("Kafka 이벤트 수신 - message: {}", message);
 
-        //1.메시지파싱
-        String[] parts = message.split(",");
-        String username = parts[0];
-        String ipAddress = parts[1];
-        String action = parts[2];
+        try {
+            // 1. JSON 파싱
+            Map<String, String> event = objectMapper.readValue(message, Map.class);
+            String username   = event.get("loginId");
+            String ipAddress  = event.get("ipAddress");
+            String action     = event.get("action");
+            String timestamp  = event.get("timestamp");
+            String userAgent  = event.get("userAgent");
+            String requestUrl = event.get("requestUrl");
 
-        //2.username으로 userId 조회
-        Long userId = appUserRepository.findByLoginId(username)
-                .map(user -> user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+            // 2. username으로 userId 조회
+            Long userId = appUserRepository.findByLoginId(username)
+                    .map(user -> user.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
-        // 3. UserLog 저장
-        UserLog userLog = UserLog.builder()
-                .userId(userId)
-                .action(action)
-                .ipAddress(ipAddress)
-                .createdAt(LocalDateTime.now())
-                .build();
+            // 3. UserLog 저장
+            UserLog userLog = UserLog.builder()
+                    .userId(userId)
+                    .action(action)
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .requestUrl(requestUrl)
+                    .createdAt(LocalDateTime.parse(timestamp, FORMATTER))
+                    .build();
 
-        userLogRepository.save(userLog);
-        log.info("로그인 이력 저장 완료 - username: {}, action: {}", username, action);
+            userLogRepository.save(userLog);
+            log.info("로그인 이력 저장 완료 - username: {}, action: {}", username, action);
 
+        } catch (Exception e) {
+            log.error("Kafka 이벤트 처리 실패 - message: {}, error: {}", message, e.getMessage());
+        }
     }
-
 }
