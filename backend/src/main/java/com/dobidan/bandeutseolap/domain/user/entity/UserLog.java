@@ -9,6 +9,7 @@ package com.dobidan.bandeutseolap.domain.user.entity;
 * */
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -35,5 +36,13 @@ public class UserLog {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Size(max = 500)
+    @Column(name = "user_agent", length = 500)
+    private String userAgent;
+
+    @Size(max = 255)
+    @Column(name = "request_url")
+    private String requestUrl;
 
 }
