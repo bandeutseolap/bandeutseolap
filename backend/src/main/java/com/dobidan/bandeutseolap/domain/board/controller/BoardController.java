@@ -97,6 +97,7 @@ public class BoardController {
 
     // username → userId 추출 공통 메서드
     private Long getUserId(UserDetails userDetails) {
+        if (userDetails == null ) return null;
         return appUserRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
                 .getId();
