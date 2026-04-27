@@ -43,7 +43,7 @@ export default {
       </div>
 
       <div class="board-header-actions">
-        <button class="btn btn-common">글쓰기</button>
+        <router-link to="/boards/new" class="btn btn-common">글쓰기</router-link>
       </div>
     </div>
 

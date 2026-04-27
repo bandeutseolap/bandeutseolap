@@ -1,9 +1,11 @@
 import axios from 'axios'
 import router from '@/router/index'
+
+
 import { getAccessToken, removeAccessToken } from '@/utils/authToken'
 
 const api = axios.create({
-    baseURL: "http://localhost:8080/api", // 추후 env 파일로 변경 필요
+    baseURL: "http://localhost:8080/", // 추후 env 파일로 변경 필요
     timeout: 10000,
 })
 
