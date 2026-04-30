@@ -107,6 +107,10 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { fetchUserLogin } from "@/services/authService.js";
+
+const router = useRouter()
 
 const loading = ref(false)
 const showPassword = ref(false)
@@ -129,21 +133,14 @@ const handleSubmit = async () => {
   try {
     loading.value = true
 
-    // TODO:
-    // 실제 API 연동 시 아래 로직을 교체하세요.
-    // await authApi.login({
-    //   loginId: form.loginId,
-    //   password: form.password,
-    //   rememberMe: form.rememberMe,
-    // })
-
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    console.log('login payload', {
+    // Login Service 연결
+    await fetchUserLogin({
       loginId: form.loginId,
-      password: form.password,
-      rememberMe: form.rememberMe,
+      password: form.password
     })
+
+    router.push('/')
+
   } catch (error) {
     errorMessage.value = '로그인에 실패했습니다. 계정 정보를 다시 확인해주세요.'
     console.error(error)

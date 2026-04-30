@@ -1,14 +1,21 @@
 // API 호출 위한 모듈
 import api from '@/services/api/api'
+import { saveAccessToken, saveRefreshToken } from '@/utils/authToken'
 
-// Login
-export async function fetchUserLogin() {
-
-    // API 호출
-    const response = await axios.post('/auth/login', {
-        headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE3NzY4NjEzODQsImV4cCI6MTc3Njg2NDk4NH0.Te4fakXwMZgnHfIM5IivfdgLn5py1be_uTLra6i12d8`
-        }
+// 로그인 API 호출
+export async function fetchUserLogin({ loginId, password }) {
+    const response = await api.post('/auth/login', {
+        loginId,
+        password,
     })
-    return response.data;
+
+    const { accessToken, refreshToken } = response.data
+
+    if (!accessToken || !refreshToken) {
+        throw new Error('로그인 응답에 토큰 정보가 없습니다.')
+    }
+
+    saveAccessToken(accessToken)
+    saveRefreshToken(refreshToken)
+
 }
