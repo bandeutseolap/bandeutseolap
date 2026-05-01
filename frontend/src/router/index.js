@@ -1,12 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import dashboardRoutes from '@/router/modules/dashboard'
-import boardRoutes from '@/router/modules/board'
-import authRoutes from '@/router/modules/auth'
+import dashboardRoutes from './modules/dashboard'
+import boardRoutes from './modules/board'
 
 const routes = [
     ...dashboardRoutes,
-    ...authRoutes,
     ...boardRoutes,
 ]
 

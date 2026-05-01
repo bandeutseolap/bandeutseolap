@@ -1,7 +1,6 @@
-import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import BoardListView from '@/views/BoardListView.vue'
-import BoardDetailView from '@/views/BoardDetailView.vue'
-import BoardFormView from '@/views/BoardFormView.vue'
+import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import BoardListView from '../../views/BoardListView.vue'
+import BoardDetailView from '../../views/BoardDetailView.vue'
 
 export default [
     {
@@ -13,20 +12,10 @@ export default [
                 name: 'boards',
                 component: BoardListView
             },
-            { // 생성
-                path: 'new',
-                name: 'boards-create',
-                component: BoardFormView
-            },
             {
                 path: ':id',
                 name: 'boards-detail',
                 component: BoardDetailView
-            },
-            { // 수정
-                path: ':id/edit',
-                name: 'boards-edit',
-                component: BoardFormView
             }
         ]
     }

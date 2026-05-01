@@ -1,18 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
+// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    extensions:['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue'], //.vue 추가!
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
+    extensions:['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue'] //.vue 추가!
   },
   server: {
     proxy: {
@@ -25,11 +18,6 @@ export default defineConfig({
         * Vue 수정 시 자동 리로드 (HMR) 그대로 동작
         * */
         rewrite: path => path.replace(/^\/api/, ''),
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Proxy Request:', req.url)
-          })
-        }
       },
     },
   },
