@@ -6,8 +6,8 @@
       </div>
 
       <div class="topnav-right">
-        <button class="btn btn-sm btn-ghost">도움말</button>
-        <button class="btn btn-sm btn-common">로그인</button>
+        <router-link to="/boards" class="btn btn-sm btn-ghost">TEMP</router-link>
+        <router-link to="/auth/login" class="btn btn-sm btn-common">로그인</router-link>
       </div>
     </div>
   </header>
