@@ -36,6 +36,7 @@ export default {
       this.error = ''
       try {
         const response = await fetchBoardDetail(this.boardId)
+
         this.form = {
           title: response.title || '',
           content: response.content || '',
