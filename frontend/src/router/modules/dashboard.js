@@ -1,5 +1,5 @@
-import DefaultLayout from '../../layouts/DefaultLayout.vue'
-import DashboardView from '../../views/DashBoardView.vue'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import DashboardView from '@/views/DashBoardView.vue'
 
 export default [
     {

@@ -1,5 +1,5 @@
 <script>
-import { fetchBoardDetail } from '../services/boardService'
+import { fetchBoardDetail } from '@/services/boardService'
 
 export default {
   name: 'BoardDetailView',
@@ -19,7 +19,7 @@ export default {
         const boardId = this.$route.params.id
         const response = await fetchBoardDetail(boardId)
 
-        this.board = response.data || null
+        this.board = response || null
       } catch (err) {
         this.error = err.message || '상세 정보를 불러오지 못했습니다.'
       } finally {
@@ -72,7 +72,7 @@ export default {
 
             <div class="board-detail-status">
               <span :class="getStatusClass(board.status)">
-                {{ board.status }}
+
               </span>
             </div>
           </div>
@@ -80,15 +80,15 @@ export default {
           <div class="board-meta-row">
             <div class="board-meta-item">
               <span class="board-meta-label">번호</span>
-              <span>{{ board.id }}</span>
+              <span>{{ board.boardId }}</span>
             </div>
             <div class="board-meta-item">
               <span class="board-meta-label">작성자</span>
-              <span>{{ board.author }}</span>
+              <span>{{ board.writtenBy }}</span>
             </div>
             <div class="board-meta-item">
               <span class="board-meta-label">생성일시</span>
-              <span>{{ board.createdAt }}</span>
+              <span>{{ board.writtenAt }}</span>
             </div>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default {
         </div>
 
         <div class="panel-footer board-detail-footer">
-          <router-link to="/board" class="btn btn-secondary">
+          <router-link to="/boards" class="btn btn-secondary">
             목록
           </router-link>
           <div class="board-detail-actions">
