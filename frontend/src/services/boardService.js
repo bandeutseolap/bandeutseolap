@@ -24,3 +24,9 @@ export async function updateBoard(boardId, data) {
     const response = await api.put(`/board/${boardId}`, data);
     return response.data;
 }
+
+// 게시글 삭제
+export async function deleteBoard(boardId) {
+  const response = await api.delete(`/board/${boardId}`)
+  return response.data;
+}

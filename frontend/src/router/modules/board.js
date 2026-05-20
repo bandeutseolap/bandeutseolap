@@ -27,6 +27,11 @@ export default [
                 path: ':id/edit',
                 name: 'boards-edit',
                 component: BoardFormView
+            },
+            { // 삭제
+                path: ':id',
+                name: 'boards-delete',
+                component: BoardDetailView
             }
         ]
     }
