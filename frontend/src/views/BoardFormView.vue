@@ -1,8 +1,12 @@
 <script>
 import { fetchBoardDetail, createBoard, updateBoard } from '@/services/boardService'
+import BoardContent from '@/components/common/BoardContent.vue'
 
 export default {
   name: 'BoardFormView',
+  components: {
+    BoardContent
+  },
   data() {
     return {
       loading: false,
@@ -66,6 +70,7 @@ export default {
       this.error = ''
 
       try {
+        //TODO: 파일 POST API 호출 (FileController)
         if (this.isEditMode) {
           await updateBoard(this.boardId, this.form)
           this.$router.push(`/boards/${this.boardId}`)
@@ -169,10 +174,17 @@ export default {
 
           <div class="form-group">
             <label class="form-label">내용 <span class="form-required">*</span></label>
-            <textarea
+            <!-- <textarea
               v-model="form.content"
               class="form-control form-textarea"
               placeholder="내용을 입력하세요."
+            /> -->
+            <!-- TODO: 위지위그로 교체 (v-model : 양방향 바인딩 (작성/수정 페이지)) -->
+            <!-- :initial-attachments="form.files" -->
+            <BoardContent
+              v-model="form.content"
+              :editable="true"
+              @update:attachments="form.files = $event"
             />
           </div>
         </div>

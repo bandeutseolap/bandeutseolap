@@ -1,11 +1,13 @@
 <script>
 import { fetchBoardDetail, deleteBoard } from '@/services/boardService'
 import YesNoModal from '@/components/common/YesNoModal.vue'
+import BoardContent from '@/components/common/BoardContent.vue'
 
 export default {
   name: 'BoardDetailView',
   components: {
-    YesNoModal
+    YesNoModal,
+    BoardContent
   },
   data() {
     return {
@@ -49,8 +51,6 @@ export default {
       this.$router.push(`/boards/${id}/edit`)
     },
     async handleDelete() {
-      // TODO : 커스텀 모달로 변경
-      //if(!confirm('삭제하시겠습니까?')) return
 
       // TODO : 성공 시 페이지 이동, 실패지 같은 페이지에 머물기
       this.deleting = true
@@ -120,11 +120,16 @@ export default {
           </div>
         </div>
 
-        <div class="panel-body">
+        <!-- <div class="panel-body">
           <div class="board-content-text">
             {{ board.content }}
           </div>
-        </div>
+        </div> -->
+
+        <BoardContent
+          :model-value="board.content"
+          :editable="false"
+        />
 
         <div class="panel-footer board-detail-footer">
           <router-link to="/boards" class="btn btn-secondary">

@@ -10,6 +10,17 @@
     "lint": "eslint src --ext .js,.vue"
   },
   "dependencies": {
+    "@tiptap/extension-color": "^3.23.2",
+    "@tiptap/extension-highlight": "^3.23.2",
+    "@tiptap/extension-image": "^3.23.2",
+    "@tiptap/extension-link": "^3.23.2",
+    "@tiptap/extension-table": "^3.23.2",
+    "@tiptap/extension-text-align": "^3.23.2",
+    "@tiptap/extension-text-style": "^3.23.2",
+    "@tiptap/extension-underline": "^3.23.2",
+    "@tiptap/pm": "^3.23.2",
+    "@tiptap/starter-kit": "^3.23.2",
+    "@tiptap/vue-3": "^3.23.2",
     "axios": "^1.11.0",
     "dayjs": "^1.11.20",
     "vue": "^3.5.0",
