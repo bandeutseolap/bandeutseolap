@@ -26,6 +26,7 @@ export default {
       try {
         const boardId = this.$route.params.id
         const response = await fetchBoardDetail(boardId)
+        //console.log("fetchBoardDetail" + '\n' + JSON.stringify(response))
 
         this.board = response || null
       } catch (err) {
@@ -129,6 +130,7 @@ export default {
         <BoardContent
           :model-value="board.content"
           :editable="false"
+          :initial-attachments="board.files"
         />
 
         <div class="panel-footer board-detail-footer">

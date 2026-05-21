@@ -38,6 +38,14 @@ export default {
     sanitizedContent() {
       // modelValue(board.content)를 그대로 반환
       return this.modelValue
+    },
+    normalizedAttachments() {
+      return this.attachments.map((file) => ({
+        name: file.name || file.originFileName,  // 둘 중 있는 것 사용
+        size: file.size || file.fileSize,
+        // 원본 데이터 보존
+        raw: file,
+      }))
     }
   },
   mounted() {
@@ -160,18 +168,35 @@ export default {
         class="viewer"
       />
       <!-- 파일 첨부 시, 첨부 파일 목록  -->
-      <div v-if="attachments.length > 0" class="attachments">
+      <div v-if="attachments.length > 0 && editable" class="attachments">
         <p class="attachments-title">첨부파일 ({{ attachments.length }})
           <button v-if="editable" @click="removeAttachment()">모두 삭제</button>
         </p>
-        <ul class="attachments-ul">
-          <li v-for="(file, index) in attachments" :key="index" class="attachment-item">
+        <ul v-if="editable" class="attachments-ul">
+          <li v-for="(file, index) in normalizedAttachments" :key="index" class="attachment-item">
             <span>📄 {{ file.name }}</span>
             <div class="attachment-etc">
               <!-- TODO: 파일 전송 상태 -->
               <span class="file-size">대기중</span>
               <span class="file-size">{{ formatSize(file.size) }}</span>
               <button v-if="editable" @click="removeAttachment(index)">✕</button>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <!-- 뷰어 모드 -->
+      <div v-if="attachments.length > 0 && !editable" class="attachments-viewer">
+        <p class="attachments-title">첨부파일 ({{ attachments.length }})
+          <button @click="">모두 저장</button>
+        </p>
+        <ul class="attachments-ul">
+          <li v-for="(file, index) in attachments" :key="index" class="attachment-item">
+            <!-- TODO: 글자 클릭 시 다운로드  -->
+            <span>📄 {{ file.originFileName }}</span>
+            <div class="attachment-etc">
+              <span class="file-size">{{ formatSize(file.fileSize) }}</span>
+              <!-- TODO: 다운로드 아이콘 -->
+              <button @click="">다운로드</button>
             </div>
           </li>
         </ul>
@@ -202,7 +227,7 @@ export default {
 }
 .viewer {
   min-height: 200px;
-  padding: 12px 12px 12px 16px;
+  padding: 12px 12px 12px 25px;
 }
 .tiptap-editor {
   border: 1px solid #ddd;
@@ -230,6 +255,13 @@ export default {
 }
 .attachments {
   margin-top: 8px;
+  border: 1px solid #ddd;   /* 에디터와 동일한 테두리 */
+  border-radius: 4px;        /* 에디터와 동일한 radius */
+  background: #fff;          /* 흰 배경으로 통일 */
+  overflow: hidden
+}
+.attachments-viewer {
+  margin: 20px;
   border: 1px solid #ddd;   /* 에디터와 동일한 테두리 */
   border-radius: 4px;        /* 에디터와 동일한 radius */
   background: #fff;          /* 흰 배경으로 통일 */

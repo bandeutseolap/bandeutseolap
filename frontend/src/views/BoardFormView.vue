@@ -20,6 +20,8 @@ export default {
         noticeYn: false,
         boardAreaCd: 'SERVICE',
         openTargetCd: 'ALL',
+        //deleteFileIds: [0],
+        files: []
       },
     }
   },
@@ -40,7 +42,7 @@ export default {
       this.error = ''
       try {
         const response = await fetchBoardDetail(this.boardId)
-
+        console.log("게시글 수정 " + JSON.stringify(response))
         this.form = {
           title: response.title || '',
           content: response.content || '',
@@ -49,6 +51,8 @@ export default {
           noticeYn: response.noticeYn ?? false,
           boardAreaCd: response.boardAreaCd || '',
           openTargetCd: response.openTargetCd || '',
+          //deleteFileIds: response.deleteFileIds || []
+          files: response.files || []
         }
       } catch (err) {
         this.error = err.message || '게시글을 불러오지 못했습니다.'
@@ -79,7 +83,9 @@ export default {
           this.$router.push(`/boards/${response.boardId}`)
         }
       } catch (err) {
-        this.error = err.message || '저장에 실패했습니다.'
+        //this.error = err.message || '저장에 실패했습니다.'
+        console.log('에러 상태:', err.response.status)
+        console.log('에러 메시지:', err.response.data)  // ← 서버 에러 메시지 확인
       } finally {
         this.submitting = false
       }
@@ -185,6 +191,7 @@ export default {
               v-model="form.content"
               :editable="true"
               @update:attachments="form.files = $event"
+              :initial-attachments="form.files"
             />
           </div>
         </div>
