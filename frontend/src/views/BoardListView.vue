@@ -1,5 +1,6 @@
 <script>
 import { fetchBoardList } from '../services/boardService'
+import dayjs from 'dayjs'
 
 export default {
   name: 'BoardListView',
@@ -20,13 +21,19 @@ export default {
         const response = await fetchBoardList()
 
         this.boardItems = response.content || []
-        this.totalCount = response.numberOfElements || 0
+        //this.totalCount = response.numberOfElements || // 현재 페이지의 건수
+        this.totalCount = response.totalElements || 0 // 전체 건수
       } catch (err) {
         this.error = err.message || '목록을 불러오지 못했습니다.'
       } finally {
         this.loading = false
       }
     },
+
+    formatDate(value) {
+      if(!value) return '-';
+      return dayjs(value).format('YYYY-MM-DD');
+    }
   },
   created() {
     this.loadBoardList()
@@ -90,7 +97,7 @@ export default {
                 {{ item.title }}
               </router-link>
             </td>
-            <td>{{ item.writtenAt }}</td>
+            <td>{{ formatDate(item.writtenAt) }}</td>
             <td>{{ item.writtenBy }}</td>
           </tr>
 

@@ -1,11 +1,19 @@
 <script>
-import { fetchBoardDetail } from '@/services/boardService'
+import { fetchBoardDetail, deleteBoard } from '@/services/boardService'
+import YesNoModal from '@/components/common/YesNoModal.vue'
+import BoardContent from '@/components/common/BoardContent.vue'
 
 export default {
   name: 'BoardDetailView',
+  components: {
+    YesNoModal,
+    BoardContent
+  },
   data() {
     return {
       loading: false,
+      deleting: false,
+      showDeleteModal: false,
       error: '',
       board: null,
     }
@@ -38,6 +46,25 @@ export default {
 
       return statusMap[status] || 'chip chip-info'
     },
+    goToEdit(id) {
+      //if(!this.writtenBy) return alert('작성자만 수정할 수 있습니다.')
+      this.$router.push(`/boards/${id}/edit`)
+    },
+    async handleDelete() {
+
+      // TODO : 성공 시 페이지 이동, 실패지 같은 페이지에 머물기
+      this.deleting = true
+      try {
+        const boardId = this.$route.params.id
+        await deleteBoard(boardId)
+        this.$router.push(`/boards`);
+      } catch (err) {
+        this.error = err.message || '삭제에 실패했습니다.'
+      } finally {
+        this.deleting = false
+        this.showDeleteModal = false
+      }
+    }
   },
   created() {
     this.loadBoardDetail()
@@ -93,19 +120,37 @@ export default {
           </div>
         </div>
 
-        <div class="panel-body">
+        <!-- <div class="panel-body">
           <div class="board-content-text">
             {{ board.content }}
           </div>
-        </div>
+        </div> -->
+
+        <BoardContent
+          :model-value="board.content"
+          :editable="false"
+        />
 
         <div class="panel-footer board-detail-footer">
           <router-link to="/boards" class="btn btn-secondary">
             목록
           </router-link>
           <div class="board-detail-actions">
-            <button class="btn btn-common">수정</button>
-            <button class="btn btn-error">삭제</button>
+            <button class="btn btn-common" @click="goToEdit(board.boardId)">수정</button>
+            <button
+            class="btn btn-error"
+            @click="showDeleteModal = true"
+            >
+             삭제
+            </button>
+            <YesNoModal
+              v-model="showDeleteModal"
+              title="게시글 삭제"
+              message="삭제하시겠습니까?"
+              subMessage="삭제된 파일은 복구할 수 없습니다."
+              :loading="deleting"
+              @confirm="handleDelete"
+            />
           </div>
         </div>
       </template>
