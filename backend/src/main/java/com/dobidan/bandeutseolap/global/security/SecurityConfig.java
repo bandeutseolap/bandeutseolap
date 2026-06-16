@@ -73,11 +73,15 @@ public class SecurityConfig {
 
                 //3) 인증 허용/차단 URL 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 회원가입, 로그인은 인증 없이 허용
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()  //Swagger 허용
-                        // 그 외 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                                // 회원가입, 로그인은 인증 없이 허용
+                                .requestMatchers("/auth/**").permitAll()
+                                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()  //Swagger 허용
+
+                                // 통합 파일 업로드 임시 프리패스 허용
+                                .requestMatchers("/files/**").permitAll()
+
+                                // 그 외 모든 요청은 인증 필요
+                                .anyRequest().authenticated()
                 )
 
                 //4) UsernamePasswordAuthenticationFilter 전에 JWT 필터 적용

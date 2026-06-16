@@ -61,4 +61,4 @@ jwt:
   refresh-expiration: 1209600000  # 14일
 
 file:
-  upload-path: /uploads
+  upload-path: /data/physic-file
