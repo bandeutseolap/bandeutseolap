@@ -62,3 +62,4 @@ jwt:
 
 file:
   upload-path: /data/physic-file
+
