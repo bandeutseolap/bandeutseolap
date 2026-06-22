@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // jakarta 대신 스프링 트랜잭션 권장
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,8 +33,8 @@ import static org.springframework.util.ReflectionUtils.setField;
 
 /**
  * FileCommonService
- * - 기존 FileServiceImpl 코드를 1도 건드리지 않기 위해 단독 분리한 공통 인프라 서비스
- * - 기획서의 데이터 Flow 5단계 및 상태 전이(PENDING -> UPLOADED -> ATTACHED)를 전담 처리
+ *
+ * 파일 업로드 및 업무 도메인(게시판, 문서 등)과의 관계 매핑을 처리하는 공통 서비스입니다.
  */
 @Slf4j
 @Service
@@ -48,53 +50,56 @@ public class FileCommonService {
     private String uploadPath;
 
     /**
-     * - @Transactional을 걸어 원장 등록(PENDING) -> 물리 저장 -> 관계 매핑(ATTACHED)을 단일 원자성 트랜잭션으로 통제
+     * 통합 파일 업로드 처리
      */
     @Transactional(rollbackFor = Exception.class)
     public List<FileUploadResponse> processUnifiedUpload(FileRequestDTO requestDTO){
 
         List<FileUploadResponse> responses = new ArrayList<>();
 
-        // 넘어온 파일 리스트가 없으면 즉시 종료
         if (requestDTO.files() == null || requestDTO.files().isEmpty()){
             return responses;
         }
 
-        // 1단계 : domainType에 따른 저장 폴더 경로 격리
+        // 1. 도메인 유형별 저장 폴더 경로 설정
         String domainFolder = requestDTO.domainType().toLowerCase();
-        String targetDir = uploadPath + "/" + domainFolder + "/" + requestDTO.ownerId();
+
+        // 회원가입 등 ID가 없는 경우 오늘 날짜로 폴더를 생성하고, ID가 있으면 ID를 폴더명으로 사용
+        String ownerFolder = (requestDTO.ownerId() == null)
+                ? LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+                : String.valueOf(requestDTO.ownerId());
+
+        // requestDTO.ownerId() 대신 설정된 ownerFolder를 적용하도록 수정
+        String targetDir = uploadPath + "/" + domainFolder + "/" + ownerFolder;
 
         File dir = new File(targetDir);
         if (!dir.exists()) {
             boolean isCreated = dir.mkdirs();
             if (!isCreated) {
-                log.error("[권한 에러] physic-file 내부에 폴더를 개설할 수 없습니다. 경로: {}", targetDir);
+                log.error("[오류] 업로드 디렉토리를 생성할 수 없습니다. 경로: {}", targetDir);
             }
         }
 
-        // 성공한 파일 ID들을 임시 보관할 바구니
+        // 등록 성공한 파일 ID를 담을 리스트
         List<Long> savedFileIds = new ArrayList<>();
 
         for (MultipartFile file : requestDTO.files()) {
             if (file.isEmpty()) continue;
 
-            // 오리지널 파일명 획득 및 확장자 잘라내기
             String originName = file.getOriginalFilename();
             String fileExt = getExtension(originName);
 
-            // 인프라 보호용 파일 사이즈 및 확장자 위험 검증
+            // 파일 크기 및 확장자 검증
             validateFile(file, fileExt);
 
-            // UUID를 활용한 고유 저장 파일명 및 스토리지 키 생성 포맷팅 컨벤션 계승
+            // 고유한 파일명 및 저장 경로(Key) 생성
             String storedFileName = UUID.randomUUID() + "." + fileExt;
             String storageKey = targetDir + "/" + storedFileName;
 
-            // 파일 위변조 검증용 고속 SHA-256 해시값 연산 호출
-            String fileHash = getFileHash(file); // 팀원 코드 100% 재활용
+            // 파일 해시값 생성
+            String fileHash = getFileHash(file);
 
-            // -----------------------------------------------------------------
-            // app_file 테이블 선제 저장 (초기 상태: PENDING)
-            // -----------------------------------------------------------------
+            // app_file 테이블 기본 정보 등록 (초기 상태: PENDING)
             AppFile appFile = AppFile.builder()
                     .storageKey(storageKey)
                     .originFileName(originName)
@@ -103,32 +108,28 @@ public class FileCommonService {
                     .mimeType(file.getContentType())
                     .fileSize(file.getSize())
                     .fileHash(fileHash)
-                    .fileStatusCd("PENDING") // PENDING 마킹
+                    .fileStatusCd("PENDING")
                     .uploadedBy(requestDTO.uploadedBy())
                     .build();
 
             AppFile savedFile = appFileRepository.save(appFile);
-            savedFileIds.add(savedFile.getFileId()); // 바구니에 ID 누적
+            savedFileIds.add(savedFile.getFileId());
 
-            // -----------------------------------------------------------------
-            // 실제 하드디스크 스토리지 물리 저장
-            // -----------------------------------------------------------------
+            // 실제 서버 하드디스크에 파일 저장
             try {
                 Path path = Paths.get(storageKey);
                 Files.write(path, file.getBytes());
 
-                // 물리 저장 완결 확인 후 상태 업그레이드 (UPLOADED)
+                // 물리 파일 저장 성공 후 상태 변경 (UPLOADED)
                 updateEntityStatus(savedFile, "UPLOADED");
                 appFileRepository.save(savedFile);
 
             } catch (IOException e) {
-                // 물리 파일 누수 가능성을 위한 트랜잭션 배수진 마킹 정책
-                log.error("[통합 업로드 장애] 물리 저장 실패 - 파일명: {}, 상태 FAILED 마킹 후 트랜잭션 롤백", originName);
-                updateEntityStatus(savedFile, "FAILED"); // 데이터 정합성 지표: FAILED 마킹
+                log.error("[업로드 오류] 물리 파일 저장 실패 - 파일명: {}", originName);
+                updateEntityStatus(savedFile, "FAILED");
                 appFileRepository.save(savedFile);
 
-                // 스프링에게 가짜 예외를 가공하여 위로 던짐으로써 상단 DB 인서트 내역까지 통째로 무효화(Rollback) 유도
-                throw new RuntimeException("물리 파일 저장 실패로 트랜잭션을 전체 취소합니다.", e);
+                throw new RuntimeException("물리 파일 저장 실패로 업로드 트랜잭션을 취소합니다.", e);
             }
 
             responses.add(new FileUploadResponse(
@@ -144,17 +145,15 @@ public class FileCommonService {
             ));
         }
 
-        // -----------------------------------------------------------------
-        // 기획 Flow 5: 다형성 다이렉트 도메인 관계 정보 DB(Rel) 매핑 라우팅
-        // -----------------------------------------------------------------
-        mapToRequestDomainRelations(requestDTO, savedFileIds);
+        // PROFILE 도메인처럼 중간 관계 테이블(Rel) 매핑이 필요 없는 도메인은 연동 과정을 생략
+        if (!"PROFILE".equalsIgnoreCase(requestDTO.domainType())) {
+            mapToRequestDomainRelations(requestDTO, savedFileIds);
+        }
 
-        // -----------------------------------------------------------------
-        // 최종 완료: 관계 테이블 이관까지 100% 성공한 경우 최종 ATTACHED 종지부 마킹
-        // -----------------------------------------------------------------
+        // 전체 프로세스 완료 후 최종 파일 상태 변경 (ATTACHED)
         for (Long fileId : savedFileIds) {
             appFileRepository.findById(fileId).ifPresent(file -> {
-                updateEntityStatus(file, "ATTACHED"); //ATTACHED
+                updateEntityStatus(file, "ATTACHED");
                 appFileRepository.save(file);
             });
         }
@@ -163,12 +162,11 @@ public class FileCommonService {
     }
 
     /**
-     * domainType 변수값 기반의 전략적 업무 도메인 분기 처리 라우터
-     * 💡 [수정 포인트] 파라미터 변수명(requestDTO, savedFileIds)에 맞춰 내부 람다/메서드 호출 인자명을 수정했습니다.
+     * 도메인 유형별 관계 테이블(Rel) 매핑 처리 라우터
      */
     private void mapToRequestDomainRelations(FileRequestDTO requestDTO, List<Long> savedFileIds) {
         String domain = requestDTO.domainType().toUpperCase();
-        log.info("[Domain Routing] 업무 관계 엔티티 매핑 라우팅 시작 -> Target: {}", domain);
+        log.info("[관계 매핑] 도메인별 매핑 시작 -> 대상: {}", domain);
 
         for (Long fileId : savedFileIds) {
             switch (domain) {
@@ -184,13 +182,13 @@ public class FileCommonService {
                     RelProjectFile rel = createRelationInstance(RelProjectFile.class, "projectId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), requestDTO.uploadedBy());
                     relProjectFileRepository.save(rel);
                 }
-                default -> throw new IllegalArgumentException("올바르지 않거나 지원하지 않는 업무 도메인 타입입니다: " + domain);
+                default -> throw new IllegalArgumentException("지원하지 않는 도메인 타입입니다: " + domain);
             }
         }
     }
 
     /**
-     * AppFile 엔티티 내부의 상태값(fileStatusCd)을 Setter 없이 강제로 주입해 주는 내부 유틸리티
+     * 리플렉션을 이용해 AppFile 엔티티의 fileStatusCd 필드 값을 직접 수정하는 유틸리티 메서드
      */
     private void updateEntityStatus(AppFile savedFile, String status) {
         try {
@@ -198,12 +196,12 @@ public class FileCommonService {
             field.setAccessible(true);
             setField(field, savedFile, status);
         } catch (Exception e) {
-            log.error("AppFile 상태 필드 주입 중 예외 발생", e);
+            log.error("AppFile 상태 필드 변경 중 예외 발생", e);
         }
     }
 
     /**
-     * 캡슐화 장벽(private)을 뚫고 데이터를 삽입하는 핵심 자바 리플렉션 객체 생성 로직
+     * 리플렉션을 이용해 동적으로 관계 엔티티 인스턴스를 생성하는 메서드
      */
     private <T> T createRelationInstance(Class<T> clazz, String idFieldName, Long ownerId, Long fileId, String roleCd, Long userId) {
         try {
@@ -229,33 +227,33 @@ public class FileCommonService {
 
             return instance;
         } catch (Exception e) {
-            throw new RuntimeException(clazz.getSimpleName() + " 인스턴스 관계 매핑 빌드 중 장애 발생", e);
+            throw new RuntimeException(clazz.getSimpleName() + " 인스턴스 관계 매핑 중 예외 발생", e);
         }
     }
 
     private String getFileHash(MultipartFile file) {
-        try{
+        try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(file.getBytes());
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 hexString.append(String.format("%02x", b));
             }
-            return  hexString.toString();
+            return hexString.toString();
         } catch (Exception e) {
             throw new RuntimeException("파일 해시 생성 실패");
         }
     }
 
     private void validateFile(MultipartFile file, String ext) {
-        long maxBytes = 100 * 1024 * 1024 ;
+        long maxBytes = 100 * 1024 * 1024;
 
         if (file.getSize() > maxBytes) {
             throw new IllegalArgumentException("단건 업로드 제한 용량(100MB)을 초과했습니다.");
         }
 
         if (List.of("exe", "sh", "bat", "jsp", "php").contains(ext.toLowerCase())) {
-            throw new IllegalArgumentException("보안 정책상 해당 악성 위험 확장자는 업로드가 금지되어 있습니다: " + ext);
+            throw new IllegalArgumentException("보안 정책상 해당 확장자는 업로드가 금지되어 있습니다: " + ext);
         }
     }
 
