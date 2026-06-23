@@ -21,6 +21,8 @@ public class SignupRequest {
     @Size(max = 50)
     private String loginId;
 
+    private Long appFileId;
+
     @NotBlank
     @Size(min = 8,max = 50)
     private String password;

@@ -1,5 +1,6 @@
 <script>
 import { fetchBoardList } from '../services/boardService'
+import dayjs from 'dayjs'
 
 export default {
   name: 'BoardListView',
@@ -19,26 +20,20 @@ export default {
       try {
         const response = await fetchBoardList()
 
-        this.boardItems = response.data || []
-        this.totalCount = response.totalCount || 0
+        this.boardItems = response.content || []
+        //this.totalCount = response.numberOfElements || // 현재 페이지의 건수
+        this.totalCount = response.totalElements || 0 // 전체 건수
       } catch (err) {
         this.error = err.message || '목록을 불러오지 못했습니다.'
       } finally {
         this.loading = false
       }
     },
-    getStatusClass(status) {
-      const statusMap = {
-        공지: 'chip chip-common',
-        진행: 'chip chip-info',
-        검토중: 'chip chip-warn',
-        완료: 'chip chip-success',
-        보류: 'chip chip-error',
-        등록: 'chip chip-common',
-      }
 
-      return statusMap[status] || 'chip chip-info'
-    },
+    formatDate(value) {
+      if(!value) return '-';
+      return dayjs(value).format('YYYY-MM-DD');
+    }
   },
   created() {
     this.loadBoardList()
@@ -55,7 +50,7 @@ export default {
       </div>
 
       <div class="board-header-actions">
-        <button class="btn btn-common">글쓰기</button>
+        <router-link to="/boards/new" class="btn btn-common">글쓰기</router-link>
       </div>
     </div>
 
@@ -79,10 +74,9 @@ export default {
         <table v-else class="table-basic board-table">
           <colgroup>
             <col style="width: 10%" />
-            <col style="width: 44%" />
-            <col style="width: 16%" />
+            <col style="width: 50%" />
+            <col style="width: 22%" />
             <col style="width: 18%" />
-            <col style="width: 12%" />
           </colgroup>
           <thead>
           <tr>
@@ -90,27 +84,21 @@ export default {
             <th>제목</th>
             <th>생성일시</th>
             <th>작성자</th>
-            <th>상태</th>
           </tr>
           </thead>
           <tbody>
-          <tr v-for="item in boardItems" :key="item.id">
-            <td>{{ item.id }}</td>
+          <tr v-for="item in boardItems" :key="item.boardId">
+            <td>{{ item.boardId }}</td>
             <td>
               <router-link
-                  :to="`/boards/${item.id}`"
+                  :to="`/boards/${item.boardId}`"
                   class="board-title-link"
               >
                 {{ item.title }}
               </router-link>
             </td>
-            <td>{{ item.createdAt }}</td>
-            <td>{{ item.author }}</td>
-            <td>
-                <span :class="getStatusClass(item.status)">
-                  {{ item.status }}
-                </span>
-            </td>
+            <td>{{ formatDate(item.writtenAt) }}</td>
+            <td>{{ item.writtenBy }}</td>
           </tr>
 
           <tr v-if="!boardItems.length">

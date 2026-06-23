@@ -57,4 +57,7 @@ public class AppUserInfo {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void updateImagePath(String imagePath){this.imagePath = imagePath;}
+
+
 }
