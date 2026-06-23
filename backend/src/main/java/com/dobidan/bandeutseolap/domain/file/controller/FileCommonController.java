@@ -28,7 +28,7 @@ public class FileCommonController {
             @RequestParam("domainType") String domainType,
             @RequestParam(value = "ownerId",required = false) Long ownerId,
             @RequestParam(value = "projectId", required = false) Long projectId,
-            @RequestParam("fileTypeCd") String fileTypeCd,
+            @RequestParam(value = "fileTypeCd", required = false) String fileTypeCd,
             @RequestParam(value = "uploadedBy",required = false) Long uploadedBy,
             @Parameter(description = "업로드할 실제 파일 리스트") @RequestPart("files") List<MultipartFile> files
     ) {
