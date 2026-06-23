@@ -55,6 +55,9 @@ dependencies {
 
 	//kafka
 	implementation("org.springframework.kafka:spring-kafka")
+
+	//Logbook
+	implementation("org.zalando:logbook-spring-boot-starter:3.0.0")
 }
 
 tasks.withType<Test> {

@@ -51,6 +51,7 @@ logging:
     org.apache.kafka: DEBUG
     org.springframework.kafka: DEBUG
     com.dobidan.bandeutseolap: INFO
+    org.zalando.logbook.Logbook: TRACE
 
 server:
   port: 8080
@@ -63,3 +64,9 @@ jwt:
 file:
   upload-path: /data/physic-file
 
+logbook:
+  include:
+    - /**  # 모든 통신
+  write:
+    chunk-size: 4000
+  upload-path: /uploads
