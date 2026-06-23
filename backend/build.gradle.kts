@@ -44,7 +44,7 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok")
 
 	// Swagger (Springdoc OpenAPI)
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
 
 	// Test
 	testImplementation("org.springframework.boot:spring-boot-starter-test")

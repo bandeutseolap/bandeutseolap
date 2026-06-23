@@ -50,8 +50,7 @@ logging:
     com.cupid.qufit: DEBUG
     org.apache.kafka: DEBUG
     org.springframework.kafka: DEBUG
-    com.dobidan.bandeutseolap: INFO
-    org.zalando.logbook.Logbook: TRACE
+    com.dobidan.bandeutseolap: DEBUG
 
 server:
   port: 8080
