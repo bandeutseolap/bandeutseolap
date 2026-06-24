@@ -3,6 +3,7 @@ package com.dobidan.bandeutseolap.domain.auth.service;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
+import com.dobidan.bandeutseolap.domain.file.repository.AppFileRepository;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUserInfo;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserInfoRepository;
@@ -10,6 +11,7 @@ import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,6 +37,7 @@ public class AuthService {
 
     private final AppUserRepository appUserRepository;
     private final AppUserInfoRepository appUserInfoRepository;
+    private final AppFileRepository appFileRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -43,6 +46,7 @@ public class AuthService {
     private final LoginEventProducer loginEventProducer;
 
     // 회원가입
+    @Transactional
     public void signup(SignupRequest request) {
 
         // 1. 로그인 아이디 중복체크
@@ -65,13 +69,23 @@ public class AuthService {
                 .build());
 
         // 4. AppUserInfo 객체 저장
-        appUserInfoRepository.save(AppUserInfo.builder()
+        AppUserInfo userInfo = AppUserInfo.builder()
                 .appUser(savedUser)
                 .birthDt(request.getBirthDt())
                 .jobCd(request.getJobCd())
                 .countryCd(request.getCountryCd())
                 .imagePath(request.getImagePath())
-                .build());
+                .build();
+
+        if (request.getAppFileId() != null){
+            appFileRepository.findById(request.getAppFileId()).ifPresent(file -> {
+                file.updateUploadedBy(savedUser.getId());
+                appFileRepository.save(file);
+                userInfo.updateImagePath(file.getStorageKey());
+            });
+
+        }
+        appUserInfoRepository.save(userInfo);
     }
 
     // 로그인
