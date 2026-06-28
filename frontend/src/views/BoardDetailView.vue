@@ -26,7 +26,6 @@ export default {
       try {
         const boardId = this.$route.params.id
         const response = await fetchBoardDetail(boardId)
-        //console.log("fetchBoardDetail" + '\n' + JSON.stringify(response))
 
         this.board = response || null
       } catch (err) {
@@ -52,8 +51,6 @@ export default {
       this.$router.push(`/boards/${id}/edit`)
     },
     async handleDelete() {
-
-      // TODO : 성공 시 페이지 이동, 실패지 같은 페이지에 머물기
       this.deleting = true
       try {
         const boardId = this.$route.params.id

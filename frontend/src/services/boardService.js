@@ -83,7 +83,7 @@ export async function createBoard(data) {
 // 게시글 수정
 export async function updateBoard(boardId, data) {
     // data => formData
-    console.log("updateBoard data" + JSON.stringify(data) );
+    console.log("updateBoard data", data)
 
     const formData = new FormData();
 
@@ -102,13 +102,7 @@ export async function updateBoard(boardId, data) {
         files.forEach((file) => formData.append('files', file))
       }
 
-    const response = await api.put(`/board/${boardId}`, formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    }
-    );
+    const response = await api.put(`/board/${boardId}`, formData);
     return response.data;
 }
 

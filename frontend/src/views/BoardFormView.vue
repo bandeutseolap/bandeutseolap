@@ -20,7 +20,7 @@ export default {
         noticeYn: false,
         boardAreaCd: 'SERVICE',
         openTargetCd: 'ALL',
-        //deleteFileIds: [0],
+        deleteFileIds: [],
         files: []
       },
     }
@@ -42,7 +42,7 @@ export default {
       this.error = ''
       try {
         const response = await fetchBoardDetail(this.boardId)
-        console.log("게시글 수정 " + JSON.stringify(response))
+        console.log("게시글 수정 " + response.files)
         this.form = {
           title: response.title || '',
           content: response.content || '',
@@ -51,7 +51,7 @@ export default {
           noticeYn: response.noticeYn ?? false,
           boardAreaCd: response.boardAreaCd || '',
           openTargetCd: response.openTargetCd || '',
-          //deleteFileIds: response.deleteFileIds || []
+          deleteFileIds: response.deleteFileIds || [],
           files: response.files || []
         }
       } catch (err) {
@@ -74,7 +74,7 @@ export default {
       this.error = ''
 
       try {
-        //TODO: 파일 POST API 호출 (FileController)
+        console.log("create/updateBoard files " + this.form.files)
         if (this.isEditMode) {
           await updateBoard(this.boardId, this.form)
           this.$router.push(`/boards/${this.boardId}`)
@@ -83,9 +83,14 @@ export default {
           this.$router.push(`/boards/${response.boardId}`)
         }
       } catch (err) {
-        //this.error = err.message || '저장에 실패했습니다.'
-        console.log('에러 상태:', err.response.status)
-        console.log('에러 메시지:', err.response.data)  // ← 서버 에러 메시지 확인
+        if(err.response.status === 413){
+          this.error = '첨부파일 용량이 너무 큽니다. 파일 크기를 확인해주세요.'
+        } else if (err.response.status === 401) {
+          alert('로그인이 필요합니다.')
+        } else {
+          this.error = '저장 중 오류가 발생했습니다.'
+        }
+        //console.log('에러 상태:', err.response.status)
       } finally {
         this.submitting = false
       }
@@ -185,12 +190,12 @@ export default {
               class="form-control form-textarea"
               placeholder="내용을 입력하세요."
             /> -->
-            <!-- TODO: 위지위그로 교체 (v-model : 양방향 바인딩 (작성/수정 페이지)) -->
-            <!-- :initial-attachments="form.files" -->
+            <!-- v-model : 양방향 바인딩 (작성/수정 페이지)) -->
             <BoardContent
               v-model="form.content"
               :editable="true"
               @update:attachments="form.files = $event"
+              @update:delete-file-ids="form.deleteFileIds = $event"
               :initial-attachments="form.files"
             />
           </div>
