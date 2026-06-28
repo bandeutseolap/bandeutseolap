@@ -1,5 +1,7 @@
 package com.dobidan.bandeutseolap.domain.board.dto;
 
+import java.util.List;
+
 /**
  * BoardRequest
  *
@@ -18,6 +20,7 @@ public record BoardRequest (String title,
                             Boolean fixedTopYn,
                             Boolean noticeYn,
                             String boardAreaCd,
-                            String openTargetCd) {
+                            String openTargetCd,
+                            List<Long> deleteFileIds) {
 
 }

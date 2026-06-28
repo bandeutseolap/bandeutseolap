@@ -7,6 +7,10 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+
+import java.util.ArrayList;
 
 /**
  * Swagger(OpenAPI) 설정
@@ -16,6 +20,14 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class SwaggerConfig {
+
+    // Swagger application/octet-stream 인식 오류로 인한 컨피그 설정 변경
+    public SwaggerConfig(MappingJackson2HttpMessageConverter converter) {
+        var supportedMediaTypes = new ArrayList<>(converter.getSupportedMediaTypes());
+        supportedMediaTypes.add(new MediaType("application", "octet-stream"));
+        converter.setSupportedMediaTypes(supportedMediaTypes);
+    }
+
 
     @Bean
     public OpenAPI openAPI() {

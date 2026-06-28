@@ -5,11 +5,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.annotation.EnableKafka;
 
 import javax.sql.DataSource;
 
 
 @SpringBootApplication
+@EnableKafka
 public class BandeutseolapApplication {
 
 	private static final Logger logger = LoggerFactory.getLogger(BandeutseolapApplication.class);

@@ -8,11 +8,19 @@ import com.dobidan.bandeutseolap.domain.board.entity.AppBoard;
 import com.dobidan.bandeutseolap.domain.board.entity.AppBoardContVer;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardContVerRepository;
 import com.dobidan.bandeutseolap.domain.board.repository.AppBoardRepository;
+import com.dobidan.bandeutseolap.domain.file.dto.FileInfoResponse;
+import com.dobidan.bandeutseolap.domain.file.repository.AppFileRepository;
+import com.dobidan.bandeutseolap.domain.file.repository.RelBoardFileRepository;
+import com.dobidan.bandeutseolap.domain.file.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * BoardServiceImpl
@@ -34,11 +42,14 @@ import org.springframework.stereotype.Service;
 public class BoardServiceImpl implements BoardService {
     private final AppBoardRepository appBoardRepository;
     private final AppBoardContVerRepository appBoardContVerRepository;
+    private final FileService fileService;
+    private final RelBoardFileRepository relBoardFileRepository;
+    private final AppFileRepository appFileRepository;
 
     // 게시글 생성
     @Override
     @Transactional
-    public BoardResponse createBoard(BoardRequest request, Long userId) {
+    public BoardResponse createBoard(BoardRequest request, Long userId, List<MultipartFile> files) {
         // 엔티티 생성 시 생성자 사용
         AppBoard board = AppBoard.builder()
                 .title(request.title())
@@ -65,6 +76,11 @@ public class BoardServiceImpl implements BoardService {
                 .build();
 
         appBoardContVerRepository.save(contentVer);
+
+        // 파일 업로드
+        if (files != null && !files.isEmpty()) {
+            fileService.uploadFiles(files, savedBoard.getBoardId(), userId);
+        }
 
         return new BoardResponse(
                 savedBoard.getBoardId(),
@@ -94,6 +110,25 @@ public class BoardServiceImpl implements BoardService {
         System.out.println("version: " + targetVersion);
         System.out.println("contVer: " + targetVersion);
 
+        // 4. 게시글 첨부 파일 조회
+        List<FileInfoResponse> files = relBoardFileRepository.findByBoardId(boardId)
+                .stream()
+                .map(rel -> appFileRepository.findById(rel.getFileId())
+                        .filter(f -> "ACTIVE".equals(f.getFileStatusCd()))  // 삭제된 파일 제외
+                        .map(f -> new FileInfoResponse(
+                                f.getFileId(),
+                                f.getOriginFileName(),
+                                f.getFileExt(),
+                                f.getMimeType(),
+                                f.getFileSize(),
+                                f.getFileStatusCd()
+                        ))
+                        .orElse(null)
+                )
+                .filter(f -> f != null)  // null 제거
+                .collect(Collectors.toList());
+
+
         return new BoardDetailResponse(
                 board.getBoardId(),
                 board.getTitle(),
@@ -107,7 +142,8 @@ public class BoardServiceImpl implements BoardService {
                 board.getWrittenAt(),
                 board.getUpdatedAt(),
                 board.getPostStatusCd(),
-                contVer.getContent()
+                contVer.getContent(),
+                files
         );
     }
 
@@ -150,7 +186,7 @@ public class BoardServiceImpl implements BoardService {
     // 게시글 수정
     @Override
     @Transactional
-    public BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId){
+    public BoardResponse updateBoard(Long boardId, BoardRequest request, Long userId, List<MultipartFile> files){
      // 1. 게시글 조회
      AppBoard board  = appBoardRepository.findById(boardId)
              .orElseThrow(()-> new RuntimeException("게시글을 찾을 수 없습니다."));
@@ -167,12 +203,25 @@ public class BoardServiceImpl implements BoardService {
      // 4. app_board_cont_ver 새 버전 insert
      int nextVersion = board.getCurrentContentVersion();
      AppBoardContVer contVer = AppBoardContVer.builder()
-             .appBoard(board)
-             .version(nextVersion)
-             .content(request.content())
-             .writtenBy(userId)
-             .build();
+            .appBoard(board)
+            .version(nextVersion)
+            .content(request.content())
+            .writtenBy(userId)
+            .build();
      appBoardContVerRepository.save(contVer);
+
+     // 5. 파일 삭제 처리
+    if (request.deleteFileIds() != null && !request.deleteFileIds().isEmpty()) {
+        request.deleteFileIds().forEach(fileId ->
+                fileService.deleteFile(boardId, fileId)
+        );
+    }
+
+    // 6. 새로운 파일 업로드
+    if (files !=null && !files.isEmpty()) {
+        fileService.uploadFiles(files, boardId, userId);
+    }
+
 
      return new BoardResponse(
              board.getBoardId(),
