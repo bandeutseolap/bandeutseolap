@@ -1,9 +1,6 @@
 package com.dobidan.bandeutseolap.domain.auth.controller;
 
-import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
-import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
-import com.dobidan.bandeutseolap.domain.auth.dto.ReissueRequest;
-import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
+import com.dobidan.bandeutseolap.domain.auth.dto.*;
 import com.dobidan.bandeutseolap.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -105,6 +102,20 @@ public class AuthController {
     public ResponseEntity<String> withdraw(@AuthenticationPrincipal UserDetails userDetails){
         authService.withdraw(userDetails.getUsername());
         return ResponseEntity.ok("회원탈퇴 완료되었습니다.");
+    }
+
+    /**
+     * 비밀번호 찾기(재설정) API - PUT /auth/find-password
+     *
+     * - 입력받은 아이디, 이름, 이메일 일치 여부 확인
+     * - 새 비밀번호를 암호화하여 DB 업데이트
+     * - 보안을 위해 기존 로그인된 세션(Refresh Token) 강제 만료
+     */
+    @Operation(summary = "비밀번호 찾기 및 재설정", description = "회원 정보 일치 확인 후 새 비밀번호로 변경하고 기존 세션을 만료합니다.")
+    @PutMapping("/find-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
 
 }

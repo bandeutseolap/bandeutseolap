@@ -82,4 +82,9 @@ public class AppUser {
         this.accStatusCd = "WITHDRAWN";
     }
 
+    // 💡 비밀번호 재설정 메서드 추가
+    public void updatePassword(String encryptedPassword) {
+        this.passwordHash = encryptedPassword;
+    }
+
 }

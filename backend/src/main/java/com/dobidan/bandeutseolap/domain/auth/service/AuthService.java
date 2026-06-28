@@ -2,6 +2,7 @@ package com.dobidan.bandeutseolap.domain.auth.service;
 
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
+import com.dobidan.bandeutseolap.domain.auth.dto.ResetPasswordRequest;
 import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUserInfo;
@@ -161,6 +162,27 @@ public class AuthService {
 
         // 3. Redis Refresh Token 삭제
         redisTokenService.deleteRefreshToken(username);
+    }
+
+    // 비밀번호 찾기 및 재설정
+    public void resetPassword(ResetPasswordRequest request) {
+        // 1. 로그인 ID로 유저 존재 여부 조회
+        AppUser appUser = appUserRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 정보입니다."));
+
+        // 2. 입력한 이름과 이메일이 DB 정보와 일치하는지 검증
+        if (!appUser.getUserName().equals(request.getUserName()) ||
+                !appUser.getEmail().equals(request.getEmail())) {
+            throw new IllegalArgumentException("입력하신 회원 정보가 일치하지 않습니다.");
+        }
+
+        // 3. 새 비밀번호 암호화 후 변경
+        String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
+        appUser.updatePassword(encryptedPassword);
+        appUserRepository.save(appUser);
+
+        // 4. 보안을 위해 기존 로그인된 다른 기기의 Refresh Token 강제 삭제
+        redisTokenService.deleteRefreshToken(appUser.getLoginId());
     }
 
 }
