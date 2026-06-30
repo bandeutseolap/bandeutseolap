@@ -34,6 +34,12 @@ spring:
     producer:
         key-serializer: org.apache.kafka.common.serialization.StringSerializer
         value-serializer: org.apache.kafka.common.serialization.StringSerializer
+        acks: all                      # 메시지 유실 방지 (이력 데이터이므로 신뢰성 우선)
+        retries: 3
+        properties:
+          enable.idempotence: true     # 중복 전송 방지
+          linger.ms: 5                 # 약간의 배칭으로 처리량 개선
+          spring.json.add.type.headers: false  # 컨슈머가 타입 의존 없게
     consumer:
         group-id: bandeutseolap
         auto-offset-reset: earliest
