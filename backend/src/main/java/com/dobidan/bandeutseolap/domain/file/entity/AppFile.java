@@ -114,5 +114,13 @@ public class AppFile {
         this.fileStatusCd = "DELETED";
         this.deleteScheduledAt = LocalDateTime.now().plusDays(90);
     }
+
+    public void markAsUploaded() {
+        this.fileStatusCd = "UPLOADED";
+    }
+
+    public void markAsFailed() {
+        this.fileStatusCd = "FAILED";
+    }
 }
 

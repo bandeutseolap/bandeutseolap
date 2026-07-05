@@ -6,22 +6,23 @@ import com.dobidan.bandeutseolap.domain.file.entity.AppFile;
 import com.dobidan.bandeutseolap.domain.file.entity.RelBoardFile;
 import com.dobidan.bandeutseolap.domain.file.entity.RelDocumentFile;
 import com.dobidan.bandeutseolap.domain.file.entity.RelProjectFile;
+import com.dobidan.bandeutseolap.domain.file.event.FileUploadedEvent;
+import com.dobidan.bandeutseolap.domain.file.event.PendingFilePayload;
 import com.dobidan.bandeutseolap.domain.file.repository.AppFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelBoardFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelDocumentFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelProjectFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.impl.FileUploadIOException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.util.ReflectionUtils.setField;
+
 
 /**
  * FileCommonService
@@ -45,12 +47,17 @@ public class FileCommonService {
     private final RelBoardFileRepository relBoardFileRepository;
     private final RelDocumentFileRepository relDocumentFileRepository;
     private final RelProjectFileRepository relProjectFileRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${file.upload-path}")
     private String uploadPath;
 
     /**
      * 통합 파일 업로드 처리
+     *
+     * 이 메서드는 DB에 PENDING 상태로 메타데이터만 저장하고 커밋한다.
+     * 실제 디스크 write는 트랜잭션 커밋 이후 FileUploadedEventListener에서 비동기로 수행되므로,
+     * 이 메서드 실행 중 어떤 예외가 나서 롤백되더라도 디스크에는 아무 파일도 남지 않는다.
      */
     @Transactional(rollbackFor = Exception.class)
     public List<FileUploadResponse> processUnifiedUpload(FileRequestDTO requestDTO){
@@ -82,6 +89,7 @@ public class FileCommonService {
 
         // 등록 성공한 파일 ID를 담을 리스트
         List<Long> savedFileIds = new ArrayList<>();
+        List<PendingFilePayload> pendingPayloads = new ArrayList<>();
 
         for (MultipartFile file : requestDTO.files()) {
             if (file.isEmpty()) continue;
@@ -95,6 +103,9 @@ public class FileCommonService {
             // 고유한 파일명 및 저장 경로(Key) 생성
             String storedFileName = UUID.randomUUID() + "." + fileExt;
             String storageKey = targetDir + "/" + storedFileName;
+
+            // 디스크에 쓰지 않고 바이트만 미리 읽어둔다
+            byte[] fileBytes = readBytes(file, originName);
 
             // 파일 해시값 생성
             String fileHash = getFileHash(file);
@@ -115,33 +126,9 @@ public class FileCommonService {
             AppFile savedFile = appFileRepository.save(appFile);
             savedFileIds.add(savedFile.getFileId());
 
-            // 실제 서버 하드디스크에 파일 저장
-            try {
-                Path path = Paths.get(storageKey);
-                Files.write(path, file.getBytes());
-
-                // 물리 파일 저장 성공 후 상태 변경 (UPLOADED)
-                updateEntityStatus(savedFile, "UPLOADED");
-                appFileRepository.save(savedFile);
-
-            } catch (IOException e) {
-                log.error("[업로드 오류] 물리 파일 저장 실패 - 파일명: {}", originName);
-                updateEntityStatus(savedFile, "FAILED");
-                appFileRepository.save(savedFile);
-
-                throw new RuntimeException("물리 파일 저장 실패로 업로드 트랜잭션을 취소합니다.", e);
-            }
-
-            responses.add(new FileUploadResponse(
-                    savedFile.getFileId(),
-                    savedFile.getOriginFileName(),
-                    savedFile.getStoredFileName(),
-                    savedFile.getStorageKey(),
-                    savedFile.getFileExt(),
-                    savedFile.getMimeType(),
-                    savedFile.getFileSize(),
-                    savedFile.getFileStatusCd(),
-                    savedFile.getUploadedAt()
+            responses.add(toResponse(savedFile));
+            pendingPayloads.add(new PendingFilePayload(
+                    savedFile.getFileId(), storageKey, targetDir, fileBytes
             ));
         }
 
@@ -150,13 +137,7 @@ public class FileCommonService {
             mapToRequestDomainRelations(requestDTO, savedFileIds);
         }
 
-        // 전체 프로세스 완료 후 최종 파일 상태 변경 (ATTACHED)
-        for (Long fileId : savedFileIds) {
-            appFileRepository.findById(fileId).ifPresent(file -> {
-                updateEntityStatus(file, "ATTACHED");
-                appFileRepository.save(file);
-            });
-        }
+        eventPublisher.publishEvent(new FileUploadedEvent(pendingPayloads));
 
         return responses;
     }
@@ -184,19 +165,6 @@ public class FileCommonService {
                 }
                 default -> throw new IllegalArgumentException("지원하지 않는 도메인 타입입니다: " + domain);
             }
-        }
-    }
-
-    /**
-     * 리플렉션을 이용해 AppFile 엔티티의 fileStatusCd 필드 값을 직접 수정하는 유틸리티 메서드
-     */
-    private void updateEntityStatus(AppFile savedFile, String status) {
-        try {
-            java.lang.reflect.Field field = AppFile.class.getDeclaredField("fileStatusCd");
-            field.setAccessible(true);
-            setField(field, savedFile, status);
-        } catch (Exception e) {
-            log.error("AppFile 상태 필드 변경 중 예외 발생", e);
         }
     }
 
@@ -260,5 +228,27 @@ public class FileCommonService {
     private String getExtension(String originName) {
         if (originName == null || !originName.contains(".")) return "";
         return originName.substring(originName.lastIndexOf(".") + 1);
+    }
+
+    private byte[] readBytes(MultipartFile file, String originName){
+        try {
+            return file.getBytes();
+        } catch (IOException e){
+          throw new RuntimeException("파일 읽기 실패: " + originName,e);
+        }
+    }
+
+    private FileUploadResponse toResponse(AppFile savedFile){
+        return new FileUploadResponse(
+                savedFile.getFileId(),
+                savedFile.getOriginFileName(),
+                savedFile.getStoredFileName(),
+                savedFile.getStorageKey(),
+                savedFile.getFileExt(),
+                savedFile.getMimeType(),
+                savedFile.getFileSize(),
+                savedFile.getFileStatusCd(),
+                savedFile.getUploadedAt()
+        );
     }
 }
