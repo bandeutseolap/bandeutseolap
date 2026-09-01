@@ -1,9 +1,6 @@
 package com.dobidan.bandeutseolap.domain.auth.service;
 
-import com.dobidan.bandeutseolap.domain.auth.dto.LoginRequest;
-import com.dobidan.bandeutseolap.domain.auth.dto.LoginResponse;
-import com.dobidan.bandeutseolap.domain.auth.dto.ResetPasswordRequest;
-import com.dobidan.bandeutseolap.domain.auth.dto.SignupRequest;
+import com.dobidan.bandeutseolap.domain.auth.dto.*;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
 import com.dobidan.bandeutseolap.domain.user.entity.AppUserInfo;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserInfoRepository;
@@ -12,7 +9,6 @@ import com.dobidan.bandeutseolap.global.kafka.LoginEventProducer;
 import com.dobidan.bandeutseolap.global.redis.RedisTokenService;
 import com.dobidan.bandeutseolap.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -164,25 +160,40 @@ public class AuthService {
         redisTokenService.deleteRefreshToken(username);
     }
 
-    // 비밀번호 찾기 및 재설정
-    public void resetPassword(ResetPasswordRequest request) {
-        // 1. 로그인 ID로 유저 존재 여부 조회
+    // 비밀번호 재설정 전 유저 정보 검증 후 임시 토큰 발급
+    public String verifyUser(VerifyUserRequest request) {
         AppUser appUser = appUserRepository.findByLoginId(request.getLoginId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 정보입니다."));
 
-        // 2. 입력한 이름과 이메일이 DB 정보와 일치하는지 검증
         if (!appUser.getUserName().equals(request.getUserName()) ||
                 !appUser.getEmail().equals(request.getEmail())) {
             throw new IllegalArgumentException("입력하신 회원 정보가 일치하지 않습니다.");
         }
+
+        return redisTokenService.savePasswordResetToken(request.getLoginId());
+    }
+
+    // 비밀번호 재설정
+    public void resetPassword(ResetPasswordRequest request) {
+        // 1. 임시 토큰으로 loginId 조회 (10분 유효)
+        String loginId = redisTokenService.getLoginIdByResetToken(request.getResetToken());
+        if (loginId == null) {
+            throw new IllegalArgumentException("인증이 만료되었습니다. 다시 인증해 주세요.");
+        }
+
+        // 2. 유저 조회
+        AppUser appUser = appUserRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 정보입니다."));
 
         // 3. 새 비밀번호 암호화 후 변경
         String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
         appUser.updatePassword(encryptedPassword);
         appUserRepository.save(appUser);
 
-        // 4. 보안을 위해 기존 로그인된 다른 기기의 Refresh Token 강제 삭제
-        redisTokenService.deleteRefreshToken(appUser.getLoginId());
-    }
+        // 4. 임시 토큰 삭제 (일회성)
+        redisTokenService.deletePasswordResetToken(request.getResetToken());
 
+        // 5. 기존 로그인된 다른 기기의 Refresh Token 강제 삭제
+        redisTokenService.deleteRefreshToken(loginId);
+    }
 }

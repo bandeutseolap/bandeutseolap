@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -95,5 +96,23 @@ public class RedisTokenService {
         boolean result = Boolean.TRUE.equals(redisTemplate.hasKey("BL:" + accessToken));
         log.info("블랙리스트 확인 - token: {}, result: {}", accessToken, result);
         return result;
+    }
+
+    // 비밀번호 재설정 임시 토큰 저장 (10분 TTL)
+    public String savePasswordResetToken(String loginId) {
+        String token = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set("PW-RESET:" + token, loginId, 10, TimeUnit.MINUTES);
+        return token;
+    }
+
+    // 비밀번호 재설정 토큰으로 loginId 조회
+    public String getLoginIdByResetToken(String token) {
+        Object value = redisTemplate.opsForValue().get("PW-RESET:" + token);
+        return value != null ? value.toString() : null;
+    }
+
+    // 비밀번호 재설정 토큰 삭제
+    public void deletePasswordResetToken(String token) {
+        redisTemplate.delete("PW-RESET:" + token);
     }
 }

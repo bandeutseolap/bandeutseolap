@@ -7,8 +7,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ResetPasswordRequest {
-    private String resetToken;
-    private String newPassword;
+public class VerifyUserRequest {
+    private String loginId;
+    private String userName;
+    private String email;
 }
-

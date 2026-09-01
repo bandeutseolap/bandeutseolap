@@ -13,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * AuthController
  *
@@ -105,18 +107,31 @@ public class AuthController {
     }
 
     /**
-     * 비밀번호 찾기(재설정) API - PUT /auth/find-password
+     * 비밀번호 재설정 1단계 - POST /auth/reset-password/verify
      *
-     * - 입력받은 아이디, 이름, 이메일 일치 여부 확인
-     * - 새 비밀번호를 암호화하여 DB 업데이트
-     * - 보안을 위해 기존 로그인된 세션(Refresh Token) 강제 만료
+     * - 아이디, 이름, 이메일 일치 여부 확인
+     * - 검증 성공 시 10분 유효한 임시 resetToken 발급
      */
-    @Operation(summary = "비밀번호 찾기 및 재설정", description = "회원 정보 일치 확인 후 새 비밀번호로 변경하고 기존 세션을 만료합니다.")
-    @PutMapping("/find-password")
+    @Operation(summary = "비밀번호 재설정 유저 정보 확인", description = "회원 정보 일치 확인 후 임시 resetToken 발급 (10분 유효)")
+    @PostMapping("/reset-password/verify")
+    public ResponseEntity<Map<String, String>> verifyUser(@RequestBody VerifyUserRequest request) {
+        String resetToken = authService.verifyUser(request);
+        return ResponseEntity.ok(Map.of("resetToken", resetToken));
+    }
+
+    /**
+     * 비밀번호 재설정 2단계 - PUT /auth/reset-password
+     *
+     * - 1단계에서 발급받은 resetToken 검증
+     * - 새 비밀번호를 암호화하여 DB 업데이트
+     * - 기존 로그인된 세션(Refresh Token) 강제 만료
+     */
+    @Operation(summary = "비밀번호 재설정", description = "1단계 발급 resetToken 검증 후 새 비밀번호로 변경")
+    @PutMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
-
 }
+
 
