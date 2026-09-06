@@ -114,7 +114,7 @@ public class FileCommonService {
             byte[] fileBytes = readBytes(file, originName);
 
             // 파일 해시값 생성
-            String fileHash = getFileHash(file);
+            String fileHash = getFileHash(fileBytes);
 
             // app_file 테이블 기본 정보 등록 (초기 상태: PENDING)
             AppFile appFile = AppFile.builder()
@@ -205,10 +205,10 @@ public class FileCommonService {
         }
     }
 
-    private String getFileHash(MultipartFile file) {
+    private String getFileHash(byte[] fileBytes) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(file.getBytes());
+            byte[] hash = digest.digest(fileBytes);
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 hexString.append(String.format("%02x", b));
