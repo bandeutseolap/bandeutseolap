@@ -12,9 +12,10 @@ import com.dobidan.bandeutseolap.domain.file.repository.AppFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelBoardFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelDocumentFileRepository;
 import com.dobidan.bandeutseolap.domain.file.repository.RelProjectFileRepository;
+import com.dobidan.bandeutseolap.domain.user.entity.AppUser;
+import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.impl.FileUploadIOException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class FileCommonService {
     private final RelDocumentFileRepository relDocumentFileRepository;
     private final RelProjectFileRepository relProjectFileRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AppUserRepository appUserRepository;
 
     @Value("${file.upload-path}")
     private String uploadPath;
@@ -67,6 +69,10 @@ public class FileCommonService {
         if (requestDTO.files() == null || requestDTO.files().isEmpty()){
             return responses;
         }
+
+        Long uploadedBy = appUserRepository.findByLoginId(requestDTO.loginId())
+                .map(AppUser::getId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         // 1. 도메인 유형별 저장 폴더 경로 설정
         String domainFolder = requestDTO.domainType().toLowerCase();
@@ -120,7 +126,7 @@ public class FileCommonService {
                     .fileSize(file.getSize())
                     .fileHash(fileHash)
                     .fileStatusCd("PENDING")
-                    .uploadedBy(requestDTO.uploadedBy())
+                    .uploadedBy(uploadedBy)
                     .build();
 
             AppFile savedFile = appFileRepository.save(appFile);
@@ -134,7 +140,7 @@ public class FileCommonService {
 
         // PROFILE 도메인처럼 중간 관계 테이블(Rel) 매핑이 필요 없는 도메인은 연동 과정을 생략
         if (!"PROFILE".equalsIgnoreCase(requestDTO.domainType())) {
-            mapToRequestDomainRelations(requestDTO, savedFileIds);
+            mapToRequestDomainRelations(requestDTO, savedFileIds, uploadedBy);
         }
 
         eventPublisher.publishEvent(new FileUploadedEvent(pendingPayloads));
@@ -145,22 +151,22 @@ public class FileCommonService {
     /**
      * 도메인 유형별 관계 테이블(Rel) 매핑 처리 라우터
      */
-    private void mapToRequestDomainRelations(FileRequestDTO requestDTO, List<Long> savedFileIds) {
+    private void mapToRequestDomainRelations(FileRequestDTO requestDTO, List<Long> savedFileIds, Long uploadedBy){
         String domain = requestDTO.domainType().toUpperCase();
         log.info("[관계 매핑] 도메인별 매핑 시작 -> 대상: {}", domain);
 
         for (Long fileId : savedFileIds) {
             switch (domain) {
                 case "BOARD" -> {
-                    RelBoardFile rel = createRelationInstance(RelBoardFile.class, "boardId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), requestDTO.uploadedBy());
+                    RelBoardFile rel = createRelationInstance(RelBoardFile.class, "boardId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), uploadedBy);
                     relBoardFileRepository.save(rel);
                 }
                 case "DOCUMENT" -> {
-                    RelDocumentFile rel = createRelationInstance(RelDocumentFile.class, "documentId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), requestDTO.uploadedBy());
+                    RelDocumentFile rel = createRelationInstance(RelDocumentFile.class, "documentId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), uploadedBy);
                     relDocumentFileRepository.save(rel);
                 }
                 case "PROJECT" -> {
-                    RelProjectFile rel = createRelationInstance(RelProjectFile.class, "projectId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), requestDTO.uploadedBy());
+                    RelProjectFile rel = createRelationInstance(RelProjectFile.class, "projectId", requestDTO.ownerId(), fileId, requestDTO.fileTypeCd(), uploadedBy);
                     relProjectFileRepository.save(rel);
                 }
                 default -> throw new IllegalArgumentException("지원하지 않는 도메인 타입입니다: " + domain);

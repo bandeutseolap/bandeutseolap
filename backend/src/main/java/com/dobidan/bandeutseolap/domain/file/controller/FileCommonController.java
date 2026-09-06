@@ -10,48 +10,43 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * @description : 도메인별 파일들과 정보를 받아 통합 업로드를 처리하는 공통 파일 기능입니다.
- */
 @Slf4j
 @Tag(name = "File Common Infrastructure", description = "파일 공통 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/files")
 public class FileCommonController {
+
     private final FileCommonService fileCommonService;
-    /**
-     * 요청 서비스의 정보(도메인, 프로젝트 등)와 실제 파일들을 받아 통합 업로드를 수행합니다.
-     */
+
     @Operation(summary = "전사 통합 파일 업로드 (files)", description = "파라미터값들과 실제 파일들을 폼 데이터로 나누어 수신합니다.")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<List<FileUploadResponse>> uploadFilesUnified(
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("domainType") String domainType,
-            @RequestParam(value = "ownerId",required = false) Long ownerId,
+            @RequestParam(value = "ownerId", required = false) Long ownerId,
             @RequestParam(value = "projectId", required = false) Long projectId,
             @RequestParam(value = "fileTypeCd", required = false) String fileTypeCd,
-            @RequestParam(value = "uploadedBy",required = false) Long uploadedBy,
             @Parameter(description = "업로드할 실제 파일 리스트") @RequestPart("files") List<MultipartFile> files
     ) {
+        log.info("[통합 파일 플랫폼 수신] 도메인: {}, 식별 ID: {}, 유저: {}", domainType, ownerId, userDetails.getUsername());
 
-        log.info("[통합 파일 플랫폼 수신] 도메인: {}, 식별 ID: {}, 유저: {}", domainType, ownerId, uploadedBy);
-
-        // 원래의 DTO 형태로 생성
         FileRequestDTO requestDTO = new FileRequestDTO(
                 domainType,
                 ownerId,
                 projectId,
                 fileTypeCd,
-                uploadedBy,
+                userDetails.getUsername(),  // loginId 넘기기
                 files
         );
 
-        // fileCommonService 호출
         List<FileUploadResponse> responses = fileCommonService.processUnifiedUpload(requestDTO);
         return ResponseEntity.ok(responses);
     }
