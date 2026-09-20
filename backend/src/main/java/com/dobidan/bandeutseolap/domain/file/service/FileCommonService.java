@@ -54,6 +54,12 @@ public class FileCommonService {
     @Value("${file.upload-path}")
     private String uploadPath;
 
+    private static final List<String> ALLOWED_EXTENSIONS = List.of(
+            "jpg", "jpeg", "png", "gif", "webp",
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "txt", "csv", "zip"
+    );
+
     /**
      * 통합 파일 업로드 처리
      *
@@ -226,8 +232,8 @@ public class FileCommonService {
             throw new IllegalArgumentException("단건 업로드 제한 용량(100MB)을 초과했습니다.");
         }
 
-        if (List.of("exe", "sh", "bat", "jsp", "php").contains(ext.toLowerCase())) {
-            throw new IllegalArgumentException("보안 정책상 해당 확장자는 업로드가 금지되어 있습니다: " + ext);
+        if (!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) {
+            throw new IllegalArgumentException("허용되지 않는 확장자입니다: " + ext);
         }
     }
 
