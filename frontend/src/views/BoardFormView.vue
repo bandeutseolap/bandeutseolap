@@ -42,7 +42,7 @@ export default {
       this.error = ''
       try {
         const response = await fetchBoardDetail(this.boardId)
-        console.log("게시글 수정 " + response.files)
+        //console.log("게시글 수정 " + JSON.stringify(response))
         this.form = {
           title: response.title || '',
           content: response.content || '',

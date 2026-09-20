@@ -95,11 +95,11 @@ export default {
               </h1>
             </div>
 
-            <div class="board-detail-status">
+            <!-- <div class="board-detail-status">
               <span :class="getStatusClass(board.status)">
 
               </span>
-            </div>
+            </div> -->
           </div>
 
           <div class="board-meta-row">

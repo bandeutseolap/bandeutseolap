@@ -32,6 +32,7 @@ export default {
   data() {
     return {
       editor : null,
+      isDragOver : false,
       attachments : [...this.initialAttachments],
       deleteFileIds: [], // 삭제할 파일 ID 추적
       downloadStatus: null,
@@ -98,7 +99,9 @@ export default {
       this.$refs.fileInput.click()
     },
     handleFileChange(e) {
-      const files = Array.from(e.target.files)
+      //console.log("handleFileChange" + e)
+      let files = []
+      files = (e instanceof File) ? [e] : Array.from(e.target.files)
 
       files.forEach((file) => {
         console.log('선택된 파일:', file)
@@ -106,7 +109,11 @@ export default {
         this.$emit('update:attachments',this.attachments)
       })
 
-      e.target.value = ''
+      if (e instanceof File) {
+        e = ''
+      } else {
+        e.target.value = ''
+      }
     },
     // 파일 사이즈 체크 - 파일 크기 포맷 (1024 → 1KB)
     formatSize(bytes) {
@@ -136,8 +143,6 @@ export default {
       this.$emit('update:attachments', this.attachments)
       this.$emit('update:deleteFileIds', this.deleteFileIds)
     },
-    // TODO: 전체 파일 다운로드: GET /board/{boardId}/files/download (zip)
-    // zip으로 묶어서 다운로드
     async downloadAttachment(index) {
       try {
         this.downloadStatus = 'loading'
@@ -169,6 +174,22 @@ export default {
           console.log("3 " + this.downloadStatus)
       }
     },
+    handleDrop(event){
+      //console.log(Array.from(event.dataTransfer.files));
+      //console.log(this);
+      // image
+      this.isDragOver = false
+      const files = Array.from(event.dataTransfer.files);
+
+      files.forEach((file) => {
+        //console.log(file);
+        if(file.type.startsWith('image/')){
+          this.insertImageFromFile(file)
+        } else {
+          this.handleFileChange(file)
+        }
+      })
+    },
     // TODO: 이미지 본문 삽입( 추천 : api.post('/file/image-upload' )
     insertImageFromFile(file) {
         const reader = new FileReader()
@@ -185,7 +206,7 @@ export default {
   // watch는 부모에서 값이 바뀔 때만 실행
   watch: {
     /*
-      타이핑 → onUpdate → $emit → 부모 board.content 변경
+      타이핑 → onUpdate →p $emit → 부모 board.content 변경
       → props modelValue 변경 → watch 실행
     */
     modelValue(newVal) {
@@ -228,12 +249,24 @@ export default {
         - 목록 버튼으로 리스트 생성
         - 파일첨부 버튼으로 이미지/파일 첨부 테스트
        -->
-      <!-- data()의 editor 인스턴스 연결 -->
-      <editor-content
+      <!--
+        isDragOver가 true면 'drag-over' 클래스 추가, false면 제거
+      -->
+      <div
         v-if="editable"
-        :editor="editor"
-        class="tiptap-editor"
-      />
+        class="editor-drop-zone"
+        :class="{ 'drag-over': isDragOver }"
+        @dragover.prevent="isDragOver = true"
+        @dragleave="isDragOver = false"
+        @drop.prevent="handleDrop"
+      >
+        <editor-content
+          v-if="editable"
+          :editor="editor"
+          class="tiptap-editor"
+        />
+        <!-- <p v-if="isDragOver" class="drop-hint">이미지를 놓으세요</p> -->
+      </div>
       <!-- 뷰어 모드 -->
       <div
         v-else
@@ -259,8 +292,6 @@ export default {
       <!-- 뷰어 모드 -->
       <div v-if="attachments.length > 0 && !editable" class="attachments-viewer">
         <p class="attachments-title">첨부파일 ({{ attachments.length }})
-          <!-- TODO: 파일 모두 다운로드 기능  -->
-          <button @click="">모두 저장</button>
         </p>
         <ul class="attachments-ul">
           <li v-for="(file, index) in attachments" :key="index" class="attachment-item">
@@ -299,6 +330,7 @@ export default {
   border-radius: 4px 4px 0 0;
   background: #f5f7f9;
 }
+
 .toolbar button {
   padding: 4px 8px;
   border: 1px solid #ccc;
@@ -306,13 +338,25 @@ export default {
   background: #fff;
   cursor: pointer;
 }
+
 .toolbar button:hover {
   background: #e9e9e9;
 }
+
 .viewer {
   min-height: 200px;
   padding: 12px 12px 12px 25px;
 }
+
+.editor-drop-zone {
+  position: relative;
+}
+
+.editor-drop-zone.drag-over .tiptap-editor {
+  border-color: #4a9eff;
+  background: #f0f7ff;
+}
+
 .tiptap-editor {
   border: 1px solid #ddd;
   border-radius: 0 0 4px 4px;
@@ -325,18 +369,30 @@ export default {
   min-height: 200px;
   line-height: 1;
 }
-
 /* focus 시 테두리 색만 변경 (검은색 제거) */
 :deep(.tiptap-editor) {
   border: 0.5px solid #ddd;
   //border-top: none;
   border-radius: 0 0 4px 4px;
 }
-
 :deep(.tiptap-editor:focus-within) {
   border-color: #4a9eff;  /* 포커스 시 파란색 테두리 */
   outline: none;
 }
+
+.drop-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: #4a9eff;
+  pointer-events: none; /* 드롭 이벤트 방해 안 하도록 */
+  background: rgba(255,255,255,0.9);
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
 .attachments {
   margin-top: 8px;
   border: 1px solid #ddd;   /* 에디터와 동일한 테두리 */
