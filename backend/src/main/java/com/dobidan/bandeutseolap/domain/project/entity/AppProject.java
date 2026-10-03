@@ -9,6 +9,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -45,7 +46,7 @@ public class AppProject {
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Size(max = 30)
     @NotNull
@@ -83,7 +84,7 @@ public class AppProject {
     @NotNull
     @ColumnDefault("0")
     @Column(name = "archive_yn", nullable = false)
-    private Byte archiveYn;
+    private Boolean archiveYn = false;
 
     @Column(name = "archived_at")
     private Instant archivedAt;
@@ -95,7 +96,7 @@ public class AppProject {
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
 
 }
