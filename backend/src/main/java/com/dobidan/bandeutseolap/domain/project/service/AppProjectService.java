@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * AppProjectService
@@ -49,9 +51,18 @@ public class AppProjectService {
 
     }
 
-    // 프로젝트 목록 조회
-    public ProjectResponse getProject(Long projectId){
-        AppProject project = appProjectRepository.findById(projectId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
+    // 목록 조회 (파라미터 없음)
+    public List<ProjectResponse> getProjects() {
+        return appProjectRepository.findAll()
+                .stream()
+                .map(ProjectResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // 상세 조회 (projectId 있음)
+    public ProjectResponse getProject(Long projectId) {
+        AppProject project = appProjectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
         return ProjectResponse.from(project);
     }
 
@@ -75,7 +86,7 @@ public class AppProjectService {
         return ProjectResponse.from(appProjectRepository.save(project));
     }
 
-    // 프로젝트 아카이브 (삭제 대신)
+    // 프로젝트 아카이브
     @Transactional
     public void archiveProject(Long projectId, Long updatedBy) {
         AppProject project = appProjectRepository.findById(projectId)
