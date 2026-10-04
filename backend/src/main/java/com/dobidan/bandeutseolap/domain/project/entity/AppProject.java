@@ -3,11 +3,8 @@ package com.dobidan.bandeutseolap.domain.project.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
-
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -15,6 +12,9 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "app_project")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@   AllArgsConstructor
+@Builder
 public class AppProject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -84,10 +84,11 @@ public class AppProject {
     @NotNull
     @ColumnDefault("0")
     @Column(name = "archive_yn", nullable = false)
+    @Builder.Default
     private Boolean archiveYn = false;
 
     @Column(name = "archived_at")
-    private Instant archivedAt;
+    private LocalDateTime archivedAt;
 
     @NotNull
     @Column(name = "updated_by", nullable = false)
@@ -98,5 +99,15 @@ public class AppProject {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
 }
