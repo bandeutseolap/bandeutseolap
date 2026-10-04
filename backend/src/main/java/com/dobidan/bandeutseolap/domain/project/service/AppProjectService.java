@@ -30,8 +30,8 @@ public class AppProjectService {
     @Transactional
     public ProjectResponse createProject(ProjectCreateRequest request, Long createdBy) {
 
-        // 프로젝트 코드 자동 생성 (PRJ + 현재시간)
-        String projectCode = "PRJ" + System.currentTimeMillis();
+    // UUID 앞 11자리 사용 (PRJ까지 총 14자리)
+        String projectCode = "PRJ" + UUID.randomUUID().toString().replace("-", "").substring(0, 11).toUpperCase();
 
         AppProject project = AppProject.builder()
                 .projectCode(projectCode)
