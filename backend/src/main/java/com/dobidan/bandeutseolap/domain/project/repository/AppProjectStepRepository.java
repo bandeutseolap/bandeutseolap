@@ -1,7 +1,9 @@
 package com.dobidan.bandeutseolap.domain.project.repository;
 
 import com.dobidan.bandeutseolap.domain.project.entity.AppProjectStep;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -13,9 +15,11 @@ import java.util.List;
  */
 public interface AppProjectStepRepository extends JpaRepository<AppProjectStep,Long> {
     // 프로젝트별 단계 조회
-    List<AppProjectStep> findByProjectId(Long projectId);
+    @Query("SELECT s FROM AppProjectStep s WHERE s.project.id = :projectId")
+    List<AppProjectStep> findByProjectId(@Param("projectId") Long projectId);
 
     // 프로젝트별 상태로 조회
-    List<AppProjectStep> findByProjectIdAndStepStatusCd(Long projectId, String stepStatusCd);
+    @Query("SELECT s FROM AppProjectStep s WHERE s.project.id = :projectId and s.stepStatusCd = :stepStatusCd")
+    List<AppProjectStep> findByProjectIdAndStepStatusCd(@Param("projectId") Long projectId, @Param("stepStatusCd") String stepStatusCd);
 }
 

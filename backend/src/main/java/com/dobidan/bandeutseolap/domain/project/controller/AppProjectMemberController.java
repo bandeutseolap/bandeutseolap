@@ -1,6 +1,6 @@
 package com.dobidan.bandeutseolap.domain.project.controller;
 
-import com.dobidan.bandeutseolap.domain.project.entity.AppProjectMember;
+import com.dobidan.bandeutseolap.domain.project.dto.response.MemberResponse;
 import com.dobidan.bandeutseolap.domain.project.service.AppProjectMemberService;
 import com.dobidan.bandeutseolap.domain.user.repository.AppUserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,7 +47,7 @@ public class AppProjectMemberController {
 
     @Operation(summary = "멤버 목록 조회")
     @GetMapping
-    public ResponseEntity<List<AppProjectMember>> getMembers(@PathVariable Long projectId) {
+    public ResponseEntity<List<MemberResponse>> getMembers(@PathVariable Long projectId) {
         return ResponseEntity.ok(appProjectMemberService.getMembers(projectId));
     }
 

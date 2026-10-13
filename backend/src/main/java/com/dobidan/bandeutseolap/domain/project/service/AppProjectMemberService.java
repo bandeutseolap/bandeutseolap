@@ -1,5 +1,6 @@
 package com.dobidan.bandeutseolap.domain.project.service;
 
+import com.dobidan.bandeutseolap.domain.project.dto.response.MemberResponse;
 import com.dobidan.bandeutseolap.domain.project.entity.AppProject;
 import com.dobidan.bandeutseolap.domain.project.entity.AppProjectMember;
 import com.dobidan.bandeutseolap.domain.project.repository.AppProjectMemberRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,8 +50,11 @@ public class AppProjectMemberService {
     }
 
     //프로젝트 멤버 조회
-    public List<AppProjectMember> getMembers(Long projectId){
-        return appProjectMemberRepository.findByProjectId(projectId);
+    public List<MemberResponse> getMembers(Long projectId) {
+        return appProjectMemberRepository.findByProjectId(projectId)
+                .stream()
+                .map(MemberResponse::from)
+                .collect(Collectors.toList());
     }
 
     //멤버 탈퇴
