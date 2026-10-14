@@ -58,6 +58,11 @@ public class AppProjectMember {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    public void prePersist() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
