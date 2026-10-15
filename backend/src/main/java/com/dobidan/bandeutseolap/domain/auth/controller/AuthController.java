@@ -110,11 +110,13 @@ public class AuthController {
      * 비밀번호 재설정 1단계 - POST /auth/reset-password/verify
      *
      * - 아이디, 이름, 이메일 일치 여부 확인
+     * - 탈퇴한 회원은 재설정 대상에서 제외
+     * - 계정 존재 여부가 노출되지 않도록 모든 실패 케이스는 동일한 메시지로 응답 (계정 열거 방지)
      * - 검증 성공 시 10분 유효한 임시 resetToken 발급
      */
     @Operation(summary = "비밀번호 재설정 유저 정보 확인", description = "회원 정보 일치 확인 후 임시 resetToken 발급 (10분 유효)")
     @PostMapping("/reset-password/verify")
-    public ResponseEntity<Map<String, String>> verifyUser(@RequestBody VerifyUserRequest request) {
+    public ResponseEntity<Map<String, String>> verifyUser(@Valid @RequestBody VerifyUserRequest request) {
         String resetToken = authService.verifyUser(request);
         return ResponseEntity.ok(Map.of("resetToken", resetToken));
     }
@@ -123,12 +125,12 @@ public class AuthController {
      * 비밀번호 재설정 2단계 - PUT /auth/reset-password
      *
      * - 1단계에서 발급받은 resetToken 검증
-     * - 새 비밀번호를 암호화하여 DB 업데이트
+     * - 새 비밀번호는 회원가입과 동일한 정책(8자 이상) 적용 후 암호화하여 DB 업데이트
      * - 기존 로그인된 세션(Refresh Token) 강제 만료
      */
     @Operation(summary = "비밀번호 재설정", description = "1단계 발급 resetToken 검증 후 새 비밀번호로 변경")
     @PutMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }

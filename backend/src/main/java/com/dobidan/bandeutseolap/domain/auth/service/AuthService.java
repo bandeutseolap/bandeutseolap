@@ -162,11 +162,19 @@ public class AuthService {
 
     // 비밀번호 재설정 전 유저 정보 검증 후 임시 토큰 발급
     public String verifyUser(VerifyUserRequest request) {
-        AppUser appUser = appUserRepository.findByLoginId(request.getLoginId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 정보입니다."));
 
+        // 1. 아이디 존재 여부 확인 (계정 열거 방지를 위해 불일치 케이스와 동일한 메시지 사용)
+        AppUser appUser = appUserRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new IllegalArgumentException("입력하신 회원 정보가 일치하지 않습니다."));
+
+        // 2. 이름 / 이메일 일치 여부 확인
         if (!appUser.getUserName().equals(request.getUserName()) ||
                 !appUser.getEmail().equals(request.getEmail())) {
+            throw new IllegalArgumentException("입력하신 회원 정보가 일치하지 않습니다.");
+        }
+
+        // 3. 탈퇴한 회원은 재설정 대상에서 제외 (로그인 차단 정책과 동일하게 처리, 동일한 메시지로 응답)
+        if (appUser.getDeletedAt() != null) {
             throw new IllegalArgumentException("입력하신 회원 정보가 일치하지 않습니다.");
         }
 
