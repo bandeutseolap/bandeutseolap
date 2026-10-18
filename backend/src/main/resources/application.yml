@@ -48,8 +48,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.web: DEBUG
     com.cupid.qufit: DEBUG
-    org.apache.kafka: INFO
-    org.springframework.kafka: INFO
+    org.apache.kafka: DEBUG
+    org.springframework.kafka: DEBUG
     com.dobidan.bandeutseolap: INFO
 
 server:
@@ -61,4 +61,5 @@ jwt:
   refresh-expiration: 1209600000  # 14일
 
 file:
-  upload-path: /uploads
+  upload-path: /data/physic-file
+

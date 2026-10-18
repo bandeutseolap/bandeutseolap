@@ -1,6 +1,7 @@
 package com.dobidan.bandeutseolap.domain.file.service;
 
 import com.dobidan.bandeutseolap.domain.file.dto.FileDownloadResponse;
+import com.dobidan.bandeutseolap.domain.file.dto.FileRequestDTO;
 import com.dobidan.bandeutseolap.domain.file.dto.FileUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 

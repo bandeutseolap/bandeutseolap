@@ -74,7 +74,7 @@ public class AppFile {
     @Column(name = "physical_deleted_at")
     private LocalDateTime physicalDeletedAt;
 
-    @Column(name = "uploaded_by", nullable = false)
+    @Column(name = "uploaded_by", nullable = true)
     private Long uploadedBy;
 
     @Column(name = "uploaded_at")
@@ -103,6 +103,11 @@ public class AppFile {
 
     public void fileActivate() {
         this.fileStatusCd = "ACTIVE";
+    }
+
+    // 회원가입 성공 시점에 진짜 유저 ID를 파일에 매핑
+    public void updateUploadedBy(Long userId) {
+        this.uploadedBy = userId;
     }
 
     public void delete(){
