@@ -38,3 +38,18 @@ export function removeToken() {
     removeAccessToken()
     removeRefreshToken()
 }
+
+// ---- 로그인 아이디 (헤더 프로필 표시용, 비밀 값이 아님) ----
+const LOGIN_ID_KEY = 'APP_LOGIN_ID'
+
+export function saveLoginId(loginId) {
+    localStorage.setItem(LOGIN_ID_KEY, loginId)
+}
+
+export function getLoginId() {
+    return localStorage.getItem(LOGIN_ID_KEY)
+}
+
+export function removeLoginId() {
+    localStorage.removeItem(LOGIN_ID_KEY)
+}

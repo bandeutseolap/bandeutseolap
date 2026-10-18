@@ -115,8 +115,8 @@ export default {
       // TODO(API 연동): axios.get(`/api/projects/${this.projectId}/phases/${this.id}`)로 교체
       const found = phaseStore.getById(this.projectId, this.id);
       if (!found) {
-        // 잘못된 id로 직접 접근한 경우 목록(수행단계 탭)으로 되돌림
-        this.$router.replace({ name: 'ProjectManage', query: { tab: 'phase' } });
+        // 잘못된 id로 직접 접근한 경우 단계 설정 목록으로 되돌림
+        this.$router.replace({ name: 'PhaseSetting' });
         return;
       }
       // 원본을 얕은 복사하여 폼에 주입 (store 데이터 직접 변형 방지)
@@ -147,8 +147,8 @@ export default {
       }
     },
     goBack() {
-      // 수행단계 탭으로 복귀하도록 query 유지
-      this.$router.push({ name: 'ProjectManage', query: { tab: 'phase' } });
+      // 단계 설정 화면으로 복귀
+      this.$router.push({ name: 'PhaseSetting' });
     },
   },
 };
@@ -156,17 +156,14 @@ export default {
 
 <style scoped>
 .pms-page {
-  padding: 28px 32px;
   max-width: 860px;
 }
 .page-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
 }
-.page-header h1 { font-size: 19px; margin: 0 0 4px; }
-.page-header p { margin: 0; color: var(--color-text-sub); font-size: 12.5px; }
 
 .form-card { padding: 0; }
 .form-body { padding: 24px; }

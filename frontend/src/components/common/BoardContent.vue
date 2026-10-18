@@ -325,22 +325,22 @@ export default {
   display: flex;
   gap: 4px;
   padding: 8px;
-  border: 1px solid var(--color-border-strong);;
+  border: 1px solid var(--color-border-strong);
   border-bottom: none;
   border-radius: 4px 4px 0 0;
-  background: #f5f7f9;
+  background: var(--color-surface-muted);
 }
 
 .toolbar button {
   padding: 4px 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
-  background: #fff;
+  background: var(--color-surface);
   cursor: pointer;
 }
 
 .toolbar button:hover {
-  background: #e9e9e9;
+  background: var(--color-secondary-200);
 }
 
 .viewer {
@@ -353,12 +353,12 @@ export default {
 }
 
 .editor-drop-zone.drag-over .tiptap-editor {
-  border-color: #4a9eff;
-  background: #f0f7ff;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
 }
 
 .tiptap-editor {
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0 0 4px 4px;
   min-height: 200px;
   padding: 12px;
@@ -371,12 +371,12 @@ export default {
 }
 /* focus 시 테두리 색만 변경 (검은색 제거) */
 :deep(.tiptap-editor) {
-  border: 0.5px solid #ddd;
-  //border-top: none;
+  border: 0.5px solid var(--color-border-strong);
+  /* border-top: none; */
   border-radius: 0 0 4px 4px;
 }
 :deep(.tiptap-editor:focus-within) {
-  border-color: #4a9eff;  /* 포커스 시 파란색 테두리 */
+  border-color: var(--color-primary-500);  /* 포커스 시 강조색 테두리 */
   outline: none;
 }
 
@@ -386,7 +386,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 14px;
-  color: #4a9eff;
+  color: var(--color-primary-600);
   pointer-events: none; /* 드롭 이벤트 방해 안 하도록 */
   background: rgba(255,255,255,0.9);
   padding: 8px 16px;
@@ -395,16 +395,16 @@ export default {
 
 .attachments {
   margin-top: 8px;
-  border: 1px solid #ddd;   /* 에디터와 동일한 테두리 */
+  border: 1px solid var(--color-border-strong);   /* 에디터와 동일한 테두리 */
   border-radius: 4px;        /* 에디터와 동일한 radius */
-  background: #fff;          /* 흰 배경으로 통일 */
+  background: var(--color-surface);          /* 표면색으로 통일 */
   overflow: hidden
 }
 .attachments-viewer {
   margin: 20px;
-  border: 1px solid #ddd;   /* 에디터와 동일한 테두리 */
+  border: 1px solid var(--color-border-strong);   /* 에디터와 동일한 테두리 */
   border-radius: 4px;        /* 에디터와 동일한 radius */
-  background: #fff;          /* 흰 배경으로 통일 */
+  background: var(--color-surface);          /* 표면색으로 통일 */
   overflow: hidden
 }
 .attachments-ul {
@@ -416,17 +416,17 @@ export default {
 .attachments-title {
   font-size: 14px;
   font-weight: 500;
-  color: #555;
+  color: var(--color-text-soft);
   padding: 8px 12px;
-  background: #f5f7f9;       /* 툴바와 동일한 배경 */
-  border-bottom: 1px solid #ddd;
+  background: var(--color-surface-muted);       /* 툴바와 동일한 배경 */
+  border-bottom: 1px solid var(--color-border);
   margin: 0;
 }
 .attachments-title button {
   border: none;
   background: none;
   cursor: pointer;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 14px;
   padding: 0 4px;
   line-height: 1;
@@ -434,11 +434,11 @@ export default {
 .attachment-item {
   display: flex;
   align-items: center;
-  //gap: 8px;
+  /* gap: 8px; */
   padding: 8px 12px 12px 0px;
   font-size: 14px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .attachment-item:last-child {
@@ -455,7 +455,7 @@ export default {
   text-align: right;  /* 오른쪽 정렬 */
   padding: 0px 15px;
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
@@ -468,7 +468,7 @@ export default {
 .attachment-name {
   border: none;
   background: none;
-  //cursor: pointer;
+  /* cursor: pointer; */
   color: var(--color-text-tertiary);
   font-size: 14px;
   padding: 0 4px;
@@ -479,7 +479,7 @@ export default {
   border: none;
   background: none;
   cursor: pointer;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 14px;
   padding: 0 4px;
   line-height: 1;
@@ -489,14 +489,14 @@ export default {
   border: none;
   background: none;
   cursor: pointer;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 14px;
   padding: 0 4px;
   line-height: 1;
 }*/
 
 .attachment-item button:hover {
-  color: #e24b4a;
+  color: var(--color-error-500);
 }
 
 .download-panel {
@@ -509,18 +509,18 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
   z-index: 1000;
 }
 
 .download-panel.loading {
-  background: #e6f1fb;
-  color: #185fa5;
+  background: var(--color-info-50);
+  color: var(--color-info-700);
 }
 
 .download-panel.error {
-  background: #fcebeb;
-  color: #a32d2d;
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .download-panel i {

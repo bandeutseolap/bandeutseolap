@@ -50,71 +50,34 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
+/* 오버레이/박스/버튼 기본 스타일은 common.css 의 .modal-overlay .modal .btn-* 사용.
+   여기서는 이 모달만의 여백/문구 스타일만 정의한다. */
 .modal {
-  background: #fff;
-  border-radius: 10px;
   width: 380px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
 }
 
 .modal-header {
-  padding: 20px 24px 0;
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
+  padding: var(--space-5) var(--space-6) 0;
+  border-bottom: none;
 }
 
 .modal-body {
-  padding: 12px 24px 20px;
+  padding: var(--space-3) var(--space-6) var(--space-5);
 }
 
 .modal-message {
-  font-size: 14px;
-  color: #333;
   margin: 0 0 4px;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
 }
 
 .modal-sub {
-  font-size: 13px;
-  color: #888;
   margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.btn-danger {
-  background: #e53e3e;
-  color: #fff;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  padding: var(--space-4) var(--space-6);
 }
 </style>

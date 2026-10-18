@@ -32,7 +32,8 @@ function getById(id) {
 async function create(payload) {
   // TODO(API 연동): const { data } = await axios.post('/api/projects', payload); return data;
   const id = state.nextId++;
-  const created = { id, ...payload };
+  // payload 뒤에 id 를 둬야 한다: 등록 폼의 payload 에는 id: null 이 들어 있어, 앞에 두면 채번한 id 가 null 로 덮어써진다
+  const created = { ...payload, id };
   state.projects.push(created);
   return created;
 }

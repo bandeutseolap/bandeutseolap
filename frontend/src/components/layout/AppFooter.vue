@@ -5,7 +5,7 @@
     </div>
 
     <div class="footer-right">
-      <span class="text-muted">v1.0.0</span>
+      <span>v1.0.0</span>
     </div>
   </footer>
 </template>

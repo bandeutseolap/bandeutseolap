@@ -1,22 +1,18 @@
 <template>
-  <div class="app-shell">
+  <!-- 앱 셸: TopNav(고정) + Sidebar + Main(내부 스크롤) — 레이아웃 CSS 는 common.css 의 .app 참고 -->
+  <div class="app">
     <AppHeader />
+    <AppSidebar />
 
-    <div class="layout-desktop">
-      <div class="layout-margin-left"></div>
-
-      <AppSidebar />
-
-      <main class="layout-main">
+    <div class="app-main">
+      <main class="app-content">
         <div class="page-wrap">
           <router-view />
         </div>
       </main>
 
-      <div class="layout-margin-right"></div>
+      <AppFooter />
     </div>
-
-    <AppFooter />
   </div>
 </template>
 

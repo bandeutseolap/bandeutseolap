@@ -2,7 +2,8 @@
 
 import axios from 'axios'
 import router from '@/router/index'
-import { getAccessToken, removeToken } from '@/utils/authToken'
+import { getAccessToken } from '@/utils/authToken'
+import authStore from '@/store/authStore'
 
 const api = axios.create({
     baseURL: "/api", // 추후 env 파일로 변경 필요
@@ -25,7 +26,7 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            removeToken()
+            authStore.logout() // 토큰 제거 + 헤더를 로그아웃 상태로 전환
             router.push('/auth/login')
         }
 

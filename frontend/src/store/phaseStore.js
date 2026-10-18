@@ -36,6 +36,40 @@ function listByProject(projectId) {
   return (state.phasesByProject[numericId] || []).slice().sort((a, b) => a.order - b.order);
 }
 
+function projectIds() {
+  return Object.keys(state.phasesByProject).map(Number).sort((a, b) => a - b);
+}
+
+/** 해당 프로젝트에서 상태가 '진행중'인 수행단계의 단계명 (없으면 빈 문자열) */
+function inProgressName(projectId) {
+  const found = listByProject(projectId).find((ph) => ph.status === 'IN_PROGRESS');
+  return found ? found.name : '';
+}
+
+/**
+ * 단계 설정 전체에서 '첫 단계'의 단계명 (프로젝트 등록 폼의 기본값).
+ * 순번(order)이 가장 앞선 수행단계를 고르고, 순번이 같으면 프로젝트 id 가 작은 쪽을 쓴다.
+ * 등록된 수행단계가 하나도 없으면 빈 문자열.
+ */
+function firstName() {
+  const all = projectIds().flatMap((id) => listByProject(id));
+  if (all.length === 0) return '';
+  // projectIds() 가 id 오름차순이고 sort 는 안정 정렬이므로, 순번이 같으면 id 가 작은 프로젝트가 앞에 온다
+  const first = all.slice().sort((x, y) => x.order - y.order)[0];
+  return first.name;
+}
+
+/** 단계 설정에 등록된 단계명 목록 (중복 제거, 프로젝트/순번 순) — 등록 폼의 선택지 */
+function allNames() {
+  const names = [];
+  projectIds().forEach((id) => {
+    listByProject(id).forEach((ph) => {
+      if (!names.includes(ph.name)) names.push(ph.name);
+    });
+  });
+  return names;
+}
+
 function getById(projectId, id) {
   // route.params는 문자열이므로 Number 변환 후 비교 (타입 불일치로 인한 조회 실패 방지)
   const numericProjectId = Number(projectId);
@@ -76,4 +110,7 @@ async function remove(projectId, id) {
   state.phasesByProject[numericProjectId] = list.filter((ph) => ph.id !== numericId);
 }
 
-export default { state, listByProject, getById, nextOrder, create, update, remove };
+export default {
+  state, listByProject, getById, nextOrder, create, update, remove,
+  inProgressName, firstName, allNames,
+};

@@ -15,7 +15,7 @@
 
       <div class="modal-footer">
         <button class="btn btn-outline" @click="$emit('cancel')">{{ cancelText }}</button>
-        <button class="btn btn-primary" :style="confirmBtnStyle" @click="$emit('confirm')">
+        <button class="btn" :class="danger ? 'btn-danger' : 'btn-primary'" @click="$emit('confirm')">
           {{ confirmText }}
         </button>
       </div>
@@ -41,10 +41,5 @@ export default {
     danger: { type: Boolean, default: true },
   },
   emits: ['confirm', 'cancel'],
-  computed: {
-    confirmBtnStyle() {
-      return this.danger ? { background: 'var(--color-danger)' } : {};
-    },
-  },
 };
 </script>

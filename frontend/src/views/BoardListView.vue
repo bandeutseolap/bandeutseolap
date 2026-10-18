@@ -45,7 +45,7 @@ export default {
   <div class="page-content">
     <div class="page-header board-header-row">
       <div>
-        <h1 class="section-title">Board</h1>
+        <h1 class="section-title">게시판</h1>
         <p class="section-desc">공지사항 및 일반 게시글 목록입니다.</p>
       </div>
 
@@ -102,7 +102,7 @@ export default {
           </tr>
 
           <tr v-if="!boardItems.length">
-            <td colspan="5" class="board-empty-state">
+            <td colspan="4" class="board-empty-state">
               게시글이 없습니다.
             </td>
           </tr>
