@@ -51,8 +51,6 @@ export default {
       this.$router.push(`/boards/${id}/edit`)
     },
     async handleDelete() {
-
-      // TODO : 성공 시 페이지 이동, 실패지 같은 페이지에 머물기
       this.deleting = true
       try {
         const boardId = this.$route.params.id
@@ -97,11 +95,11 @@ export default {
               </h1>
             </div>
 
-            <div class="board-detail-status">
+            <!-- <div class="board-detail-status">
               <span :class="getStatusClass(board.status)">
 
               </span>
-            </div>
+            </div> -->
           </div>
 
           <div class="board-meta-row">
@@ -129,6 +127,7 @@ export default {
         <BoardContent
           :model-value="board.content"
           :editable="false"
+          :initial-attachments="board.files"
         />
 
         <div class="panel-footer board-detail-footer">

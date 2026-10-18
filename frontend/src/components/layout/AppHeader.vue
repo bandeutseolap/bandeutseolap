@@ -2,7 +2,10 @@
   <header class="app-topnav">
     <div class="topnav-inner">
       <div class="topnav-left">
-        <h1 class="topnav-logo">반듯서랍</h1>
+        <!-- <img src="@/assets/images/BandeutSeolap.png" alt="임시 로고"> -->
+        <router-link to="/">
+          <h1 class="topnav-logo">반듯서랍</h1>
+        </router-link>
       </div>
 
       <div class="topnav-right">
@@ -34,11 +37,11 @@ export default {
   align-items: center;
   gap: var(--space-3);
 }
-
 .topnav-logo {
   margin: 0;
   font-size: var(--font-size-lg);
   font-weight: 700;
-  color: var(--color-text);
+  color: #293f54;
+  //color: var(--color-text);
 }
 </style>
