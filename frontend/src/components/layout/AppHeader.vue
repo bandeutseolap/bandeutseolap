@@ -1,7 +1,7 @@
 <template>
   <header class="app-topnav">
     <!-- 브랜드 영역: 폭을 사이드바와 맞춰 상단/좌측 구분선이 이어지도록 함 -->
-    <router-link to="/" class="brand">
+    <router-link to="/projects/dashboard" class="brand">
       <span class="brand-mark" aria-hidden="true">반</span>
       <span class="brand-name">반듯서랍</span>
     </router-link>

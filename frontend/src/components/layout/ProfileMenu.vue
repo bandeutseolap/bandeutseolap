@@ -29,7 +29,7 @@
         <span v-if="profile.description" class="profile-desc">{{ profile.description }}</span>
       </div>
 
-      <router-link to="/account" class="profile-item" @click="close" @keydown.esc="close">계정 관리</router-link>
+      <router-link :to="{ name: 'MyPage' }" class="profile-item" @click="close" @keydown.esc="close">마이페이지</router-link>
       <button type="button" class="profile-item" @click="onLogout" @keydown.esc="close">로그아웃</button>
     </div>
   </div>

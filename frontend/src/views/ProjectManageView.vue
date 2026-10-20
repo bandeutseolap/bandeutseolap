@@ -4,7 +4,7 @@
   <div class="pms-page">
     <div class="page-header">
       <div>
-        <h1>프로젝트 목록</h1>
+        <h1>프로젝트 설정</h1>
         <p>프로젝트를 등록/수정/삭제합니다.</p>
       </div>
     </div>

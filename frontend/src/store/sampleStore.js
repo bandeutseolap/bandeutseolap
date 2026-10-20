@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import dayjs from 'dayjs'
 import { today } from '@/utils/workMeta'
 
 /**
@@ -36,7 +37,7 @@ const state = reactive({
     { id: 1, loginId: 'ycrdevloper', initial: 'Y', role: 'PM', desc: '시스템 설계 / ERD', gradient: AVATAR_GRADIENTS[0] },
     { id: 2, loginId: 'ljhdevloper', initial: 'L', role: 'DEV', desc: '게시판 API + Kafka', gradient: AVATAR_GRADIENTS[1] },
     { id: 3, loginId: 'hyjdevloper', initial: 'H', role: 'DEV', desc: '인증 / 로그인 + Kafka', gradient: AVATAR_GRADIENTS[2] },
-    { id: 4, loginId: 'devkyr', initial: 'D', role: 'DEV', desc: 'Frontend + Kafka', gradient: AVATAR_GRADIENTS[3] },
+    { id: 4, loginId: 'kyrdevloper', initial: 'K', role: 'DEV', desc: 'Frontend', gradient: AVATAR_GRADIENTS[3] },
   ],
 
   tasks: [
@@ -78,8 +79,38 @@ const state = reactive({
     { id: 5, name: '이슈 트래커', percent: 10, tone: '' },
   ],
 
-  // 계정 관리에서 수정한 이름/이메일 (로그인 아이디별) — 내 정보 조회 샘플 응답에 덮어쓴다
+  // 마이페이지(내 정보)에서 수정한 이름/이메일 (로그인 아이디별) — 내 정보 조회 샘플 응답에 덮어쓴다
   profileEdits: {},
+
+  // 마이페이지 샘플 데이터 (이름/이메일은 profileEdits + 내 정보 조회가 담당)
+  // TODO(API 연동): 각 화면의 조회/저장 API 가 생기면 myPageService 가 이 데이터 대신 서버를 호출한다
+  myPage: {
+    info: {
+      phone: '010-1234-5678',
+      imagePath: '',
+      imageUrl: '', // 업로드 미리보기용 브라우저 URL (서버 연동 시에는 imagePath 로 조회)
+      birthDate: '1990-01-01',
+      job: '개발자',
+      nationality: 'KR',
+    },
+    security: {
+      mfaMethod: 'OTP',
+      mfaVerifiedAt: '2026-10-12 18:20',
+      lastLoginAt: '2026-10-19 09:12',
+      lastLoginIp: '192.168.0.12',
+    },
+    // Redis 세션 목록. current 는 지금 이 브라우저의 세션
+    sessions: [
+      { id: 's1', loginType: 'ID/PW', ip: '192.168.0.12', lastAccessAt: dayjs().format('YYYY-MM-DD HH:mm'), status: 'ACTIVE', current: true },
+      { id: 's2', loginType: 'SSO', ip: '10.10.3.45', lastAccessAt: '2026-10-19 17:42', status: 'ACTIVE', current: false },
+      { id: 's3', loginType: 'ID/PW + MFA', ip: '203.0.113.8', lastAccessAt: '2026-10-17 11:05', status: 'ACTIVE', current: false },
+      { id: 's4', loginType: 'ID/PW', ip: '192.168.0.31', lastAccessAt: '2026-10-10 08:30', status: 'EXPIRED', current: false },
+    ],
+    consents: [
+      { id: 'c1', title: '개인정보 수집·이용 동의', required: true, agreed: true, agreedAt: '2026-09-01 10:00', withdrawnAt: '' },
+      { id: 'c2', title: '마케팅 정보 수신 동의', required: false, agreed: false, agreedAt: '2026-09-01 10:00', withdrawnAt: '2026-10-05 14:30' },
+    ],
+  },
 
   // 등록 화면 → 목록 화면으로 넘어갈 때 한 번만 보여줄 토스트 메시지
   flash: '',

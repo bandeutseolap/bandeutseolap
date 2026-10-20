@@ -27,14 +27,8 @@ const PHASE_NAMES = ['PhaseSetting', 'PhaseCreate', 'PhaseEdit']
 
 /** 사이드바 '메뉴' 섹션 — children 이 있으면 펼침/접힘 그룹 */
 export const sidebarMenu = [
-  { label: '대시보드', to: '/', names: ['dashboard'], icon: ICON.dashboard },
-  {
-    label: '멤버', icon: ICON.members, countKey: 'members',
-    children: [
-      { label: '멤버 관리', to: '/members', names: ['MemberManage'] },
-      { label: '권한 관리', to: '/members/permissions', names: ['PermissionManage'] },
-    ],
-  },
+//  { label: '대시보드', to: '/', names: ['dashboard'], icon: ICON.dashboard },
+  { label: '대시보드', to: '/projects/dashboard', names: ['ProjectOverview'], icon: ICON.dashboard },
   {
     label: '게시판', icon: ICON.board,
     children: [
@@ -46,7 +40,7 @@ export const sidebarMenu = [
     children: [
 //      { label: '템플릿 등록', to: '/documents/templates/new', names: ['TemplateCreate'] },
       { label: '템플릿 목록', to: '/documents/templates', names: ['TemplateList'] },
-      { label: '템플릿 공유', to: '/templates/share', names: ['TemplateShare'] },
+//      { label: '템플릿 공유', to: '/templates/share', names: ['TemplateShare'] },
 //      { label: '문서 작성', to: '/documents/new', names: ['DocumentCreate'] },
       { label: '문서 목록', to: '/documents', names: ['DocumentList'] },
     ],
@@ -69,9 +63,17 @@ export const sidebarMenu = [
 
 /** 사이드바 '프로젝트 관리' 섹션 */
 export const sidebarProjectManage = [
-  { label: '프로젝트 목록', to: '/projects', names: PROJECT_MANAGE_NAMES, icon: ICON.manage },
+  { label: '관리 페이지', to: '/projects', names: PROJECT_MANAGE_NAMES, icon: ICON.manage },
   { label: '단계 설정', to: '/projects/phases', names: PHASE_NAMES, icon: ICON.stage },
-  { label: '전체 대시보드', to: '/projects/dashboard', names: ['ProjectOverview'], icon: ICON.overview },
+//  { label: '대시보드', to: '/', names: ['dashboard'], icon: ICON.dashboard }
+//  { label: '전체 대시보드', to: '/projects/dashboard', names: ['ProjectOverview'], icon: ICON.overview },
+  {
+    label: '멤버 설정', icon: ICON.members, countKey: 'members',
+    children: [
+      { label: '멤버 관리', to: '/members', names: ['MemberManage'] },
+      { label: '권한 관리', to: '/members/permissions', names: ['PermissionManage'] },
+    ],
+  },
 ]
 
 /** 헤더 상단 메뉴 (hover 시 드롭다운) */
@@ -79,7 +81,7 @@ export const headerMenu = [
 //  {
 //    label: '계정',
 //    children: [
-//      { label: '계정 관리', to: '/account', names: ['AccountManage'] },
+//      { label: '마이페이지', to: '/mypage', names: ['MyPage', 'MyProfile', 'MySecurity', 'MySessions', 'MyConsents'] },
 //    ],
 //  },
   {

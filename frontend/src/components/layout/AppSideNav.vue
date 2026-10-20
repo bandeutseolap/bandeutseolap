@@ -62,12 +62,48 @@
     <!-- 프로젝트 관리 -->
     <nav class="sidebar-section" aria-label="프로젝트 관리">
       <div class="sidebar-label">프로젝트 관리</div>
-      <router-link v-for="item in projectMenu" :key="item.to" :to="item.to" custom v-slot="{ href, navigate }">
+
+      <!-- <router-link v-for="item in projectMenu" :key="item.to" :to="item.to" custom v-slot="{ href, navigate }">
         <a :href="href" class="sidebar-item" :class="{ active: isActive(item) }" :aria-current="isActive(item) ? 'page' : null" @click="navigate">
           <svg class="item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="item.icon" /></svg>
           {{ item.label }}
         </a>
-      </router-link>
+      </router-link> -->
+      <template v-for="item in projectMenu" :key="item.label">
+        <!-- 하위 메뉴가 없는 단일 항목 -->
+        <router-link v-if="!item.children" :to="item.to" custom v-slot="{ href, navigate }">
+          <a :href="href" class="sidebar-item" :class="{ active: isActive(item) }" :aria-current="isActive(item) ? 'page' : null" @click="navigate">
+            <svg class="item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="item.icon" /></svg>
+            {{ item.label }}
+          </a>
+        </router-link>
+
+        <!-- 하위 메뉴가 있는 그룹: 클릭하면 펼침/접힘 -->
+        <div v-else class="sidebar-group">
+          <button
+            type="button"
+            class="sidebar-item group-toggle"
+            :class="{ 'has-active': isGroupActive(item) }"
+            :aria-expanded="isExpanded(item)"
+            @click="toggleGroup(item)"
+          >
+            <svg class="item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="item.icon" /></svg>
+            <span class="item-label">{{ item.label }}</span>
+            <span v-if="item.countKey" class="count" :class="{ danger: item.countTone === 'danger' }">{{ counts[item.countKey] }}</span>
+            <svg class="chevron" :class="{ open: isExpanded(item) }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+
+          <ul v-show="isExpanded(item)" class="sidebar-sub">
+            <li v-for="child in item.children" :key="child.to">
+              <router-link :to="child.to" custom v-slot="{ href, navigate }">
+                <a :href="href" class="sidebar-subitem" :class="{ active: isActive(child) }" :aria-current="isActive(child) ? 'page' : null" @click="navigate">
+                  {{ child.label }}
+                </a>
+              </router-link>
+            </li>
+          </ul>
+        </div>
+      </template>
     </nav>
   </aside>
 </template>

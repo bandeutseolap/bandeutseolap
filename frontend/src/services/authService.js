@@ -51,7 +51,7 @@ export async function fetchMyProfile() {
     }
 }
 
-// 같은 시점에 여러 곳(헤더, 계정 관리)에서 부르더라도 요청은 한 번만 보내기 위한 보관소
+// 같은 시점에 여러 곳(헤더, 마이페이지)에서 부르더라도 요청은 한 번만 보내기 위한 보관소
 let inflightProfile = null
 
 // 내 정보를 조회해 authStore 에 저장한다. 이미 있으면 재사용(force 로 다시 조회)

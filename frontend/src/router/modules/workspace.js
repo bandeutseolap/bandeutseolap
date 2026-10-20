@@ -1,7 +1,7 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 /**
- * 멤버 / 문서 / 업무 / 이슈 / 계정 / 템플릿 공유 라우트
+ * 멤버 / 문서 / 업무 / 이슈 / 마이페이지 / 템플릿 공유 라우트
  * (사이드바·헤더 메뉴의 라우트 name 은 config/navigation.js 와 일치해야 한다)
  */
 export default [
@@ -40,12 +40,18 @@ export default [
         ]
     },
     {
-        path: '/account',
+        path: '/mypage',
         component: DefaultLayout,
         children: [
-            { path: '', name: 'AccountManage', component: () => import('@/views/account/AccountManageView.vue') }
+            { path: '', name: 'MyPage', component: () => import('@/views/mypage/MyPageView.vue') },
+            { path: 'profile', name: 'MyProfile', component: () => import('@/views/mypage/MyProfileView.vue') },
+            { path: 'security', name: 'MySecurity', component: () => import('@/views/mypage/MySecurityView.vue') },
+            { path: 'sessions', name: 'MySessions', component: () => import('@/views/mypage/MySessionsView.vue') },
+            { path: 'consents', name: 'MyConsents', component: () => import('@/views/mypage/MyConsentsView.vue') }
         ]
     },
+    // 예전 '계정 관리' 주소는 마이페이지로 보낸다
+    { path: '/account', redirect: { name: 'MyPage' } },
     {
         path: '/templates/share',
         component: DefaultLayout,

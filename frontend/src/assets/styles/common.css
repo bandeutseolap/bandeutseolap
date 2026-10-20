@@ -862,6 +862,17 @@ tbody tr:hover td { background: var(--color-surface-muted); }
     list-style: none;
 }
 
+.board-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color 0.12s ease;
+}
+.board-item:last-child { border-bottom: none; }
+.board-item:hover { background: var(--color-surface-muted); }
+
 .task-item {
     display: flex;
     align-items: flex-start;

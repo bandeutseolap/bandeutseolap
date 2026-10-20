@@ -56,7 +56,7 @@
               수행단계 변경은 <router-link :to="{ name: 'PhaseSetting' }">단계 설정</router-link>에서 합니다.
             </p>
           </template>
-          <!-- 등록 모드: 기본값은 단계 설정에서 '진행중'인 단계명. 목록에서 고르거나 직접 입력 -->
+          <!-- 등록 모드: 기본값은 단계 설정의 첫 단계명. 목록에서 고르거나 직접 입력 -->
           <template v-else>
             <input
               id="project-phase"
@@ -156,7 +156,7 @@ export default {
     if (this.isEditMode) {
       this.loadProject();
     } else {
-      // 등록: 단계 설정에서 상태가 '진행중'인 단계명을 기본값으로 채운다
+      // 등록: 단계 설정의 첫 단계명을 기본값으로 채운다 (등록한 단계는 '진행중' 상태로 시작)
       this.phaseName = phaseStore.firstName();
     }
   },

@@ -133,3 +133,11 @@
 .radio-group input { accent-color: var(--color-primary-600); }
 
 .field-hint { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--color-text-muted); }
+
+/* 제목 영역 + 우측 버튼 (등록/마이페이지 하위 화면 공통) */
+.page-header.head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
