@@ -46,7 +46,7 @@
           <!-- 게시판: /boards 와 같은 목록 API 의 최신 게시글 -->
           <section class="card">
             <div class="card-head">
-              <span class="card-title">전체 공지</span>
+              <span class="card-title">게시판</span>
               <router-link to="/boards" class="btn btn-ghost btn-sm">전체 보기</router-link>
             </div>
 
@@ -60,7 +60,7 @@
             </div>
 
             <ul v-else-if="boards.length" class="task-list">
-              <li v-for="board in boards" :key="board.boardId" class="board-item">
+              <li v-for="board in boards" :key="board.boardId" class="task-item">
                 <svg class="task-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M4 4h16v12H8l-4 4z" />
                 </svg>
@@ -101,7 +101,7 @@ import { fetchBoardList } from '@/services/boardService'
 import dayjs from 'dayjs'
 
 // 대시보드에 보여줄 최신 게시글 수 (목록 API 는 최신순으로 내려준다)
-const BOARD_LIMIT = 3
+const BOARD_LIMIT = 5
 
 export default {
   name: 'ProjectOverviewView',

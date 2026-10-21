@@ -104,7 +104,7 @@ import dayjs from 'dayjs'
 const BOARD_LIMIT = 5
 
 export default {
-  name: 'ProjectOverviewView',
+  name: 'ProjectOverView',
   components: { TaskRow, IssueTable },
   data() {
     return {

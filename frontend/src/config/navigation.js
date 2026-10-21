@@ -24,6 +24,7 @@ const ICON = {
 
 const PROJECT_MANAGE_NAMES = ['ProjectManage', 'ProjectCreate', 'ProjectEdit']
 const PHASE_NAMES = ['PhaseSetting', 'PhaseCreate', 'PhaseEdit']
+const SYSTEM_BOARD_NAMES = ['SystemBoardList', 'SystemBoardDetail', 'SystemBoardCreate', 'SystemBoardEdit', 'SystemBoardVersions']
 
 /** 사이드바 '메뉴' 섹션 — children 이 있으면 펼침/접힘 그룹 */
 export const sidebarMenu = [
@@ -76,7 +77,12 @@ export const sidebarProjectManage = [
   },
 ]
 
-/** 헤더 상단 메뉴 (hover 시 드롭다운) */
+/**
+ * 헤더 상단 메뉴 (hover 시 드롭다운)
+ * - names : 이 항목이 활성으로 보여야 하는 라우트 name 목록
+ * - area  : 시스템 게시판처럼 같은 화면을 ?area= 쿼리로 나누는 경우, 쿼리 값까지 일치해야 활성
+ * - to 가 비어 있으면(아직 화면이 없는 메뉴) 클릭해도 이동하지 않는다
+ */
 export const headerMenu = [
 //  {
 //    label: '계정',
@@ -85,10 +91,30 @@ export const headerMenu = [
 //    ],
 //  },
   {
-    label: '시스템 설정',
+    label: '사용자/권한 관리',
     children: [
-      { label: '공지사항', to: '', names: '' },
-      { label: '자유게시판', to: '', names: '' },
+      { label: '사용자 목록', to: '/admin/users', names: ['AdminUserList', 'AdminUserDetail'] },
+//      { label: '사용자 등록', to: '/admin/users/new', names: ['AdminUserCreate'] },
+      { label: '역할 관리', to: '/admin/roles', names: ['AdminRoleList'] },
+      { label: '역할-권한 매핑', to: '/admin/roles/permissions', names: ['AdminRolePermission'] },
+      { label: '역할별 사용자', to: '/admin/roles/users', names: ['AdminRoleUsers'] },
+    ],
+  },
+  {
+    label: '스토리지 관리',
+    children: [
+      { label: '스토리지 대시보드', to: '/admin/storage', names: ['StorageDashboard'] },
+      { label: '프로젝트별 사용량', to: '/admin/storage/projects', names: ['StorageProjects'] },
+      { label: '파일 탐색기', to: '/admin/storage/files', names: ['StorageFiles'] },
+      { label: '삭제 예정 / 물리 삭제', to: '/admin/storage/deletions', names: ['StorageDeletions'] },
+      { label: '정합성 점검', to: '/admin/storage/integrity', names: ['StorageIntegrity'] },
+    ],
+  },
+  {
+    label: '시스템 게시판',
+    children: [
+      { label: '공지사항', to: { name: 'SystemBoardList', query: { area: 'notice' } }, area: 'notice', names: SYSTEM_BOARD_NAMES },
+      { label: '자유게시판', to: { name: 'SystemBoardList', query: { area: 'free' } }, area: 'free', names: SYSTEM_BOARD_NAMES },
     ],
   },
 ]

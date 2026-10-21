@@ -73,6 +73,9 @@ import { headerMenu } from '@/config/navigation'
 import ProfileMenu from '@/components/layout/ProfileMenu.vue'
 import authStore from '@/store/authStore'
 
+// hover 로 열린 직후 이 시간 안의 클릭은 '닫기'로 보지 않는다
+const HOVER_CLICK_GRACE_MS = 400
+
 export default {
   name: 'AppHeader',
   components: { ProfileMenu },
@@ -80,6 +83,7 @@ export default {
     return {
       menus: headerMenu,
       openIndex: -1,
+      openedAt: 0,
       closeTimer: null,
     }
   },
@@ -94,16 +98,29 @@ export default {
       this.closeMenu()
     },
   },
+  mounted() {
+    // 메뉴 바깥을 누르면 닫는다 (터치 기기에서는 버튼에 포커스가 가지 않아 focusout 만으로는 닫히지 않는다)
+    document.addEventListener('click', this.onDocumentClick)
+  },
   beforeUnmount() {
     clearTimeout(this.closeTimer)
+    document.removeEventListener('click', this.onDocumentClick)
   },
   methods: {
     openMenu(index) {
       clearTimeout(this.closeTimer)
+      if (this.openIndex !== index) this.openedAt = Date.now()
       this.openIndex = index
     },
+    // hover 로 막 열린 직후의 클릭(마우스 이동 + 클릭, 터치의 mouseenter + click)은 같은 동작으로 보고 닫지 않는다.
+    // 그 뒤에 다시 누르거나 키보드로 누르면 닫힌다.
     toggleMenu(index) {
-      this.openIndex = this.openIndex === index ? -1 : index
+      if (this.openIndex === index && Date.now() - this.openedAt > HOVER_CLICK_GRACE_MS) this.closeMenu()
+      else this.openMenu(index)
+    },
+    onDocumentClick(event) {
+      const nav = this.$el.querySelector('.nav-links')
+      if (this.openIndex >= 0 && nav && !nav.contains(event.target)) this.closeMenu()
     },
     closeMenu() {
       clearTimeout(this.closeTimer)
@@ -124,7 +141,9 @@ export default {
     },
     isChildActive(child) {
       // names 가 비어 있거나 배열이 아닌 메뉴(미구현 항목)는 활성으로 보지 않는다
-      return Array.isArray(child.names) && child.names.includes(this.$route.name)
+      if (!Array.isArray(child.names) || !child.names.includes(this.$route.name)) return false
+      // 같은 화면을 ?area= 로 나누는 메뉴(시스템 게시판)는 쿼리 값까지 같아야 활성 (기본값은 notice)
+      return child.area ? (this.$route.query.area || 'notice') === child.area : true
     },
     isMenuActive(menu) {
       return menu.children.some((child) => this.isChildActive(child))
@@ -318,6 +337,34 @@ export default {
 .nav-action-primary:hover {
   background: var(--color-primary-500);
   color: #fff;
+}
+
+/* 태블릿/모바일: 메뉴가 많아 한 줄에 다 들어가지 않으므로 메뉴 줄을 가로 스크롤로 두고,
+   드롭다운은 스크롤 영역에 잘리지 않도록 화면 기준(fixed)으로 띄운다 */
+@media (max-width: 1100px) {
+  .nav-links {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-item {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  .nav-dropdown {
+    position: fixed;
+    top: var(--topnav-height);
+    left: var(--space-2);
+    right: auto;
+    min-width: 200px;
+    max-width: calc(100vw - 16px);
+  }
 }
 
 /* 좁은 화면: 브랜드 글자를 숨기고 여백을 줄여 한 줄에 맞춘다 */

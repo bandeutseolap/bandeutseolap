@@ -20,7 +20,7 @@ export default [
           { // 프로젝트 관리 > 전체 대시보드
             path: '/projects/dashboard',
             name: 'ProjectOverview',
-            component: () => import('@/views/project/ProjectOverviewView.vue'),
+            component: () => import('@/views/project/ProjectOverView.vue'),
           },
           {
             path: '/projects/new',

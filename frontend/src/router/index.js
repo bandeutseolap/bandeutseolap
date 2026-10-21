@@ -5,13 +5,15 @@ import boardRoutes from '@/router/modules/board'
 import authRoutes from '@/router/modules/auth'
 import projectRoutes from '@/router/modules/project'
 import workspaceRoutes from '@/router/modules/workspace'
+import adminRoutes from '@/router/modules/admin'
 
 const routes = [
     ...dashboardRoutes,
     ...authRoutes,
     ...boardRoutes,
     ...projectRoutes,
-    ...workspaceRoutes
+    ...workspaceRoutes,
+    ...adminRoutes
 ]
 
 const router = createRouter({
