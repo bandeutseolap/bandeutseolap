@@ -64,7 +64,7 @@ export const sidebarMenu = [
 
 /** 사이드바 '프로젝트 관리' 섹션 */
 export const sidebarProjectManage = [
-  { label: '관리 페이지', to: '/projects', names: PROJECT_MANAGE_NAMES, icon: ICON.manage },
+  { label: '프로젝트 설정', to: '/projects', names: PROJECT_MANAGE_NAMES, icon: ICON.manage },
   { label: '단계 설정', to: '/projects/phases', names: PHASE_NAMES, icon: ICON.stage },
 //  { label: '대시보드', to: '/', names: ['dashboard'], icon: ICON.dashboard }
 //  { label: '전체 대시보드', to: '/projects/dashboard', names: ['ProjectOverview'], icon: ICON.overview },
